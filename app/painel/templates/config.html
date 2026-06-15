@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<h1>Configurações</h1>
+{% if salvo %}<p class="ok">Salvo ✓</p>{% endif %}
+{% if erro %}<p class="err">{{ erro }}</p>{% endif %}
+<form method="post" action="/admin/config">
+  <label>Tempo do buffer (segundos)</label>
+  <input name="buffer_segundos" type="number" value="{{ c.buffer_segundos }}">
+  <label>Bloqueio humano (minutos)</label>
+  <input name="bloqueio_humano_min" type="number" value="{{ c.bloqueio_humano_min }}">
+  <label>Rate limit — máx mensagens</label>
+  <input name="rate_limit_max" type="number" value="{{ c.rate_limit_max }}">
+  <label>Rate limit — janela (segundos)</label>
+  <input name="rate_limit_janela" type="number" value="{{ c.rate_limit_janela }}">
+  <label>Máx mensagens no histórico</label>
+  <input name="historico_max" type="number" value="{{ c.historico_max }}">
+  <label>Timeout do agente (segundos)</label>
+  <input name="agent_timeout_seg" type="number" value="{{ c.agent_timeout_seg }}">
+  <label>System prompt (personalidade da Elizabeth)</label>
+  <textarea name="system_prompt">{{ c.system_prompt }}</textarea>
+  <h3>Descrição das tools</h3>
+  {% for nome, desc in c.tools_descricao.items() %}
+  <label>{{ nome }}</label>
+  <textarea name="tool__{{ nome }}">{{ desc }}</textarea>
+  {% endfor %}
+  <button type="submit">Salvar</button>
+</form>
+{% endblock %}

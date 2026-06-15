@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Painel Elizabeth</title>
+  <style>
+    body{font-family:system-ui,sans-serif;max-width:760px;margin:2rem auto;padding:0 1rem;color:#222}
+    nav a{margin-right:1rem} label{display:block;margin:.8rem 0 .2rem;font-weight:600}
+    input,textarea{width:100%;padding:.5rem;font:inherit;border:1px solid #ccc;border-radius:6px}
+    textarea{min-height:6rem} button{margin-top:1rem;padding:.6rem 1.2rem;cursor:pointer}
+    .ok{background:#e6ffed;border:1px solid #34d058;padding:.6rem;border-radius:6px}
+    .err{background:#ffeef0;border:1px solid #d73a49;padding:.6rem;border-radius:6px}
+    table{width:100%;border-collapse:collapse} td,th{border-bottom:1px solid #eee;padding:.5rem;text-align:left}
+  </style>
+</head>
+<body>
+  {% if request.session.get('user') %}
+  <nav><a href="/admin/config">Configurações</a><a href="/admin/sessoes">Sessões</a>
+    <a href="/admin/logout">Sair</a></nav><hr>
+  {% endif %}
+  {% block conteudo %}{% endblock %}
+</body>
+</html>
