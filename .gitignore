@@ -4,3 +4,9 @@ __pycache__/
 .env
 *.log
 .pytest_cache/
+.DS_Store
+dist/
+build/
+*.egg-info/
+.mypy_cache/
+htmlcov/
