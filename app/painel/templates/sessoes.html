@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<h1>Sessões</h1>
+<table>
+  <tr><th>Número</th><th>Nome</th><th>Status</th><th></th></tr>
+  {% for s in sessoes %}
+  <tr>
+    <td>{{ s.numero.split('@')[0] }}</td>
+    <td>{{ s.nome or '—' }}</td>
+    <td>{{ s.status }}</td>
+    <td><a href="/admin/sessoes/{{ s.numero }}">abrir</a></td>
+  </tr>
+  {% endfor %}
+</table>
+{% endblock %}

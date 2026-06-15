@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<h1>Conversa {{ numero.split('@')[0] }}</h1>
+<form method="post" action="/admin/sessoes/{{ numero }}/pausar" style="display:inline">
+  <button>Pausar bot</button></form>
+<form method="post" action="/admin/sessoes/{{ numero }}/despausar" style="display:inline">
+  <button>Despausar</button></form>
+<hr>
+{% for m in mensagens %}
+<p><strong>{{ m.role }}:</strong> {{ m.texto }}</p>
+{% endfor %}
+{% endblock %}
