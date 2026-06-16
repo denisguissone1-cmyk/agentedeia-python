@@ -24,20 +24,32 @@ de uma vez.
 
 ## A imagem Docker (GHCR)
 
-O workflow [`.github/workflows/docker.yml`](.github/workflows/docker.yml) builda e publica a
-imagem em **ghcr.io/denisguissone1-cmyk/agentedeia-python:latest** a cada push na `main`
-(e dá pra rodar à mão na aba **Actions → build-image → Run workflow**).
+A imagem é **ghcr.io/denisguissone1-cmyk/agentedeia-python:latest**. O build do dia a dia
+é **local** (mais rápido que na nuvem):
 
-**Uma vez só, depois do primeiro build:** torne o pacote **público** para o EasyPanel
-puxar sem login — GitHub → seu perfil → **Packages** → `agentedeia-python` → *Package
-settings* → *Change visibility* → **Public**.
-(Alternativa: manter privado e cadastrar credenciais do GHCR no EasyPanel em Cluster →
-Registries, usando um Personal Access Token com escopo `read:packages`.)
-
-Para buildar a imagem localmente, se quiser:
 ```bash
+# 1. Login no GHCR (uma vez) — precisa de um PAT classic com escopo write:packages
+#    GitHub → Settings → Developer settings → Personal access tokens (classic)
+echo SEU_PAT | docker login ghcr.io -u denisguissone1-cmyk --password-stdin
+
+# 2. Build (na raiz do projeto)
 docker build -t ghcr.io/denisguissone1-cmyk/agentedeia-python:latest .
+
+# 3. Push
+docker push ghcr.io/denisguissone1-cmyk/agentedeia-python:latest
 ```
+
+Depois do push, no EasyPanel clique em **Deploy** nos serviços `app` e `worker` para
+puxarem a imagem nova.
+
+**Uma vez só:** o pacote precisa estar **público** para o EasyPanel puxar sem login —
+GitHub → perfil → **Packages** → `agentedeia-python` → *Package settings* → *Change
+visibility* → **Public**. (Alternativa: manter privado e cadastrar credenciais do GHCR no
+EasyPanel em Cluster → Registries, com um PAT de escopo `read:packages`.)
+
+O workflow [`.github/workflows/docker.yml`](.github/workflows/docker.yml) faz o mesmo build
+na nuvem, mas roda **só manualmente** (Actions → build-image → Run workflow) — fallback
+para quando você não estiver na sua máquina.
 
 > O repositório precisa estar **acessível** pelo EasyPanel: ou público, ou com a conta
 > GitHub conectada no EasyPanel (Settings → Git). Se o seu EasyPanel pedir source por URL

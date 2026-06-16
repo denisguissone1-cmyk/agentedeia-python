@@ -1,11 +1,11 @@
 name: build-image
 
-# Builda a imagem Docker e publica no GitHub Container Registry (GHCR)
-# a cada push na main. A imagem serve tanto para o app quanto para o worker.
+# Builda a imagem Docker e publica no GitHub Container Registry (GHCR).
+# Só roda MANUALMENTE (Actions → build-image → Run workflow). O build do dia a dia
+# é feito localmente (docker build + push) — veja DEPLOY-EASYPANEL.md. Isto fica como
+# fallback para quando você não estiver na sua máquina.
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 jobs:
