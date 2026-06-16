@@ -12,7 +12,9 @@ já interligado: **app** (painel + webhook) + **worker** (fila) + **Postgres** +
    - ⚠️ Não use o "Create Service → From Schema" (esse cria **um** serviço e espera só
      `{type, data}`; colar o `{services:[…]}` ali dá o erro *React #31 / object with keys
      {services}*).
-3. Cole o conteúdo de `easypanel-schema.json` e confirme.
+3. Cole o conteúdo de `easypanel-schema.json` e confirme. O schema é um **array puro**
+   `[ … ]` de serviços (o importador do EasyPanel não aceita o embrulho `{"services":[…]}`
+   — colar o objeto dá o erro *React #31 / object with keys {services}*).
 4. O EasyPanel cria os 4 serviços. O `app` e o `worker` são buildados direto deste
    repositório no GitHub (via Dockerfile). Aguarde o primeiro build terminar.
 5. Acesse o painel pelo domínio gerado do serviço **app** → `/admin`.
