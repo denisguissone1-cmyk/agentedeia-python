@@ -16,13 +16,30 @@ O **Create from Schema** do EasyPanel cria **um serviço por vez** (espera um ob
    2. `easypanel/2-redis.json`
    3. `easypanel/3-app.json`
    4. `easypanel/4-worker.json`
-3. O `app` e o `worker` são buildados direto deste repositório no GitHub (Dockerfile).
-   Aguarde o build do `app` e do `worker` terminar.
+3. O `app` e o `worker` usam a **imagem pronta** `ghcr.io/denisguissone1-cmyk/agentedeia-python:latest`
+   (buildada pelo GitHub Action — veja abaixo). O EasyPanel só baixa e roda.
 4. Acesse o painel pelo domínio gerado do serviço **app** → `/admin`.
 
 > Cada arquivo é um único objeto `{type, data}` — é esse formato que o "Create from Schema"
 > aceita. Colar um array `[…]` dá *"Expected object, received array"*; colar o embrulho
 > `{"services":[…]}` dá *React #31 / object with keys {services}*.
+
+## A imagem Docker (GHCR)
+
+O workflow [`.github/workflows/docker.yml`](.github/workflows/docker.yml) builda e publica a
+imagem em **ghcr.io/denisguissone1-cmyk/agentedeia-python:latest** a cada push na `main`
+(e dá pra rodar à mão na aba **Actions → build-image → Run workflow**).
+
+**Uma vez só, depois do primeiro build:** torne o pacote **público** para o EasyPanel
+puxar sem login — GitHub → seu perfil → **Packages** → `agentedeia-python` → *Package
+settings* → *Change visibility* → **Public**.
+(Alternativa: manter privado e cadastrar credenciais do GHCR no EasyPanel em Cluster →
+Registries, usando um Personal Access Token com escopo `read:packages`.)
+
+Para buildar a imagem localmente, se quiser:
+```bash
+docker build -t ghcr.io/denisguissone1-cmyk/agentedeia-python:latest .
+```
 
 > O repositório precisa estar **acessível** pelo EasyPanel: ou público, ou com a conta
 > GitHub conectada no EasyPanel (Settings → Git). Se o seu EasyPanel pedir source por URL

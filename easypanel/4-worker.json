@@ -4,15 +4,8 @@
     "projectName": "sofia",
     "serviceName": "worker",
     "source": {
-      "type": "github",
-      "owner": "denisguissone1-cmyk",
-      "repo": "agentedeia-python",
-      "ref": "main",
-      "path": "/"
-    },
-    "build": {
-      "type": "dockerfile",
-      "file": "Dockerfile"
+      "type": "image",
+      "image": "ghcr.io/denisguissone1-cmyk/agentedeia-python:latest"
     },
     "env": "REDIS_URL=redis://default:076458f2f5c5e33c5061797da343563e@$(PROJECT_NAME)_redis:6379\nPOSTGRES_CONN=postgresql://postgres:6ca675ebf6c9d8f53eeca90c757bc983@$(PROJECT_NAME)_postgres:5432/elizabeth",
     "deploy": {
