@@ -5,7 +5,7 @@ import pytz
 from langchain.agents import AgentExecutor, create_tool_calling_agent
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
-from app.clientes import llm
+from app import clientes
 from app.config import get_config
 from app.memoria import carregar_historico, salvar_par_conversa
 from app.tools import montar_tools
@@ -23,7 +23,7 @@ async def chamar_agente(number: str, texto_completo: str, cadastro: dict) -> str
         MessagesPlaceholder(variable_name="agent_scratchpad"),
     ])
 
-    agente   = create_tool_calling_agent(llm, tools, prompt)
+    agente   = create_tool_calling_agent(clientes.llm, tools, prompt)
     executor = AgentExecutor(agent=agente, tools=tools, verbose=False)
 
     agora = datetime.now(pytz.timezone("America/Sao_Paulo"))
