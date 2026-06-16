@@ -1,12 +1,25 @@
 {% extends "base.html" %}
 {% block conteudo %}
-<h1>Conversa {{ numero.split('@')[0] }}</h1>
-<form method="post" action="/admin/sessoes/{{ numero }}/pausar" style="display:inline">
-  <button>Pausar bot</button></form>
-<form method="post" action="/admin/sessoes/{{ numero }}/despausar" style="display:inline">
-  <button>Despausar</button></form>
-<hr>
-{% for m in mensagens %}
-<p><strong>{{ m.role }}:</strong> {{ m.texto }}</p>
-{% endfor %}
+<div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap">
+  <a href="/admin/sessoes" style="font-size:13px;color:var(--g400)">← Sessões</a>
+  <h1 style="margin:0;font-family:monospace;font-size:18px;flex:1">{{ numero.split('@')[0] }}</h1>
+  <div style="display:flex;gap:.5rem">
+    <form method="post" action="/admin/sessoes/{{ numero }}/pausar" style="margin:0">
+      <button type="submit" class="btn-ghost btn btn-sm">Pausar bot</button>
+    </form>
+    <form method="post" action="/admin/sessoes/{{ numero }}/despausar" style="margin:0">
+      <button type="submit" class="btn-sm">Despausar</button>
+    </form>
+  </div>
+</div>
+<div class="card" style="padding:0;overflow:hidden">
+  {% for m in mensagens %}
+  <div style="padding:.7rem 1.25rem;border-bottom:1px solid var(--g100);display:flex;gap:1rem;animation:fadeIn .12s ease">
+    <span style="font-size:11px;font-weight:600;min-width:72px;padding-top:.15rem;color:{% if m.role == 'Elizabeth' %}var(--blue){% else %}var(--g400){% endif %}">{{ m.role }}</span>
+    <span style="font-size:13px;color:var(--g700);white-space:pre-wrap;word-break:break-word">{{ m.texto }}</span>
+  </div>
+  {% else %}
+  <div style="padding:2.5rem;text-align:center;color:var(--g400);font-size:13px">Nenhuma mensagem ainda</div>
+  {% endfor %}
+</div>
 {% endblock %}

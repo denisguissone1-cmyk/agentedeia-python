@@ -3,22 +3,102 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Painel Elizabeth</title>
+  <title>Elizabeth · Painel</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
-    body{font-family:system-ui,sans-serif;max-width:760px;margin:2rem auto;padding:0 1rem;color:#222}
-    nav a{margin-right:1rem} label{display:block;margin:.8rem 0 .2rem;font-weight:600}
-    input,textarea{width:100%;padding:.5rem;font:inherit;border:1px solid #ccc;border-radius:6px}
-    textarea{min-height:6rem} button{margin-top:1rem;padding:.6rem 1.2rem;cursor:pointer}
-    .ok{background:#e6ffed;border:1px solid #34d058;padding:.6rem;border-radius:6px}
-    .err{background:#ffeef0;border:1px solid #d73a49;padding:.6rem;border-radius:6px}
-    table{width:100%;border-collapse:collapse} td,th{border-bottom:1px solid #eee;padding:.5rem;text-align:left}
+    :root{--blue:#2563EB;--blue-dim:#EFF6FF;--g900:#111827;--g700:#374151;--g400:#9CA3AF;--g100:#F3F4F6;--g50:#F9FAFB;--border:#E5E7EB;--r:8px}
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Inter',system-ui,sans-serif;font-size:14px;line-height:1.5;letter-spacing:-0.01em;color:var(--g900);background:var(--g50)}
+    a{color:inherit;text-decoration:none}
+
+    /* Nav */
+    nav{background:#fff;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 1.5rem;position:sticky;top:0;z-index:20}
+    .brand{font-weight:600;font-size:13px;letter-spacing:-0.03em;margin-right:auto;padding:1rem 0;color:var(--g900)}
+    nav a{font-size:13px;font-weight:500;color:var(--g700);padding:1rem .75rem;border-bottom:2px solid transparent;transition:color .15s,border-color .15s;white-space:nowrap}
+    nav a:hover{color:var(--blue)}
+    nav a.active{color:var(--blue);border-bottom-color:var(--blue)}
+    .nav-logout{margin-left:.75rem;padding:.4rem .85rem!important;border:1px solid var(--border)!important;border-radius:6px;font-size:12px!important;border-bottom:1px solid var(--border)!important}
+    .nav-logout:hover{background:var(--g50);color:var(--g900)!important}
+
+    /* Layout */
+    .container{max-width:800px;margin:0 auto;padding:2rem 1.5rem;animation:fadeIn .2s ease}
+
+    @keyframes fadeIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+
+    /* Typography */
+    h1{font-size:20px;font-weight:600;letter-spacing:-0.035em;margin-bottom:1.5rem}
+    h2{font-size:14px;font-weight:600;letter-spacing:-0.02em;color:var(--g700);margin-bottom:.75rem}
+    .section-label{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--g400);margin:0 0 .75rem}
+
+    /* Card */
+    .card{background:#fff;border:1px solid var(--border);border-radius:var(--r);padding:1.5rem;margin-bottom:1rem}
+
+    /* Form */
+    label{display:block;font-size:12px;font-weight:500;color:var(--g700);margin:.9rem 0 .3rem}
+    label:first-child{margin-top:0}
+    input[type=text],input[type=password],input[type=number],textarea{width:100%;padding:.45rem .75rem;font:inherit;font-size:13px;color:var(--g900);background:#fff;border:1px solid var(--border);border-radius:6px;outline:none;transition:border-color .15s,box-shadow .15s}
+    input:focus,textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(37,99,235,.1)}
+    textarea{min-height:5rem;resize:vertical}
+    .input-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem 1rem}
+    @media(max-width:560px){.input-grid{grid-template-columns:1fr}}
+
+    /* Button */
+    button,.btn{position:relative;overflow:hidden;display:inline-flex;align-items:center;gap:.35rem;padding:.5rem 1rem;font:inherit;font-size:13px;font-weight:500;color:#fff;background:var(--blue);border:none;border-radius:6px;cursor:pointer;transition:background .15s;text-decoration:none}
+    button:hover,.btn:hover{background:#1D4ED8}
+    .btn-ghost{color:var(--g700);background:#fff;border:1px solid var(--border)}
+    .btn-ghost:hover{background:var(--g50);color:var(--g900)}
+    .btn-sm{padding:.3rem .75rem;font-size:12px}
+    .actions{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:1.25rem}
+
+    /* Ripple */
+    .ripple{position:absolute;border-radius:50%;background:rgba(255,255,255,.35);transform:scale(0);animation:ripple .5s linear;pointer-events:none}
+    @keyframes ripple{to{transform:scale(4);opacity:0}}
+
+    /* Alerts */
+    .ok{background:#F0FDF4;border:1px solid #86EFAC;color:#166534;padding:.55rem .9rem;border-radius:6px;font-size:13px;margin-bottom:1rem}
+    .err{background:#FEF2F2;border:1px solid #FCA5A5;color:#991B1B;padding:.55rem .9rem;border-radius:6px;font-size:13px;margin-bottom:1rem}
+
+    /* Table */
+    table{width:100%;border-collapse:collapse;font-size:13px}
+    thead th{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--g400);padding:.5rem .75rem;text-align:left;border-bottom:1px solid var(--border)}
+    tbody td{padding:.65rem .75rem;border-bottom:1px solid var(--g100);color:var(--g700)}
+    tbody tr:last-child td{border-bottom:none}
+    tbody tr:hover td{background:var(--g50)}
+
+    /* Badge */
+    .badge{display:inline-block;font-size:11px;font-weight:500;padding:.15rem .55rem;border-radius:9999px}
+    .badge-green{background:#DCFCE7;color:#166534}
+    .badge-gray{background:var(--g100);color:var(--g400)}
+
+    /* Hint */
+    .hint{font-size:12px;color:var(--g400);margin:.3rem 0 0}
   </style>
 </head>
 <body>
-  {% if request.session.get('user') %}
-  <nav><a href="/admin/config">Configurações</a><a href="/admin/sessoes">Sessões</a>
-    <a href="/admin/logout">Sair</a></nav><hr>
-  {% endif %}
+{% if request.session.get('user') %}
+<nav>
+  <span class="brand">Elizabeth</span>
+  <a href="/admin/config" {% if '/config' in request.url.path %}class="active"{% endif %}>Configurações</a>
+  <a href="/admin/tokens" {% if '/tokens' in request.url.path %}class="active"{% endif %}>Tokens</a>
+  <a href="/admin/sessoes" {% if '/sessoes' in request.url.path %}class="active"{% endif %}>Sessões</a>
+  <a href="/admin/logout" class="nav-logout">Sair</a>
+</nav>
+{% endif %}
+<div class="container">
   {% block conteudo %}{% endblock %}
+</div>
+<script>
+document.querySelectorAll('button,.btn').forEach(b=>{
+  b.addEventListener('click',function(e){
+    const r=document.createElement('span');
+    r.className='ripple';
+    const rect=this.getBoundingClientRect(),s=Math.max(rect.width,rect.height);
+    r.style.cssText=`width:${s}px;height:${s}px;left:${e.clientX-rect.left-s/2}px;top:${e.clientY-rect.top-s/2}px`;
+    this.appendChild(r);
+    setTimeout(()=>r.remove(),600);
+  });
+});
+</script>
 </body>
 </html>
