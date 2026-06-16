@@ -1,0 +1,11 @@
+{
+  "type": "postgres",
+  "data": {
+    "projectName": "sofia",
+    "serviceName": "postgres",
+    "image": "postgres:15",
+    "username": "postgres",
+    "password": "6ca675ebf6c9d8f53eeca90c757bc983",
+    "database": "elizabeth"
+  }
+}

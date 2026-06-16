@@ -1,0 +1,9 @@
+{
+  "type": "redis",
+  "data": {
+    "projectName": "sofia",
+    "serviceName": "redis",
+    "image": "redis:7",
+    "password": "076458f2f5c5e33c5061797da343563e"
+  }
+}

@@ -5,19 +5,24 @@ já interligado: **app** (painel + webhook) + **worker** (fila) + **Postgres** +
 
 ## Passo a passo
 
-1. No EasyPanel, crie um projeto chamado **`sofia`** (precisa ser esse nome — é o
-   `projectName` do schema; se quiser outro, troque os 4 `"projectName": "sofia"` no JSON).
-2. Importe o schema **a nível de PROJETO**, não de serviço:
-   - abra o projeto `sofia` → menu/aba **Schema** → **Import / Create from Schema**.
-   - ⚠️ Não use o "Create Service → From Schema" (esse cria **um** serviço e espera só
-     `{type, data}`; colar o `{services:[…]}` ali dá o erro *React #31 / object with keys
-     {services}*).
-3. Cole o conteúdo de `easypanel-schema.json` e confirme. O schema é um **array puro**
-   `[ … ]` de serviços (o importador do EasyPanel não aceita o embrulho `{"services":[…]}`
-   — colar o objeto dá o erro *React #31 / object with keys {services}*).
-4. O EasyPanel cria os 4 serviços. O `app` e o `worker` são buildados direto deste
-   repositório no GitHub (via Dockerfile). Aguarde o primeiro build terminar.
-5. Acesse o painel pelo domínio gerado do serviço **app** → `/admin`.
+O **Create from Schema** do EasyPanel cria **um serviço por vez** (espera um objeto
+`{ "type": …, "data": … }`). Então cole os 4 arquivos da pasta [`easypanel/`](easypanel/),
+**nesta ordem** (bancos primeiro):
+
+1. Crie um projeto chamado **`sofia`** (é o `projectName` dos arquivos; se quiser outro
+   nome, troque `"projectName": "sofia"` nos 4).
+2. Dentro do projeto, em **Create Service → From Schema**, cole e confirme cada um:
+   1. `easypanel/1-postgres.json`
+   2. `easypanel/2-redis.json`
+   3. `easypanel/3-app.json`
+   4. `easypanel/4-worker.json`
+3. O `app` e o `worker` são buildados direto deste repositório no GitHub (Dockerfile).
+   Aguarde o build do `app` e do `worker` terminar.
+4. Acesse o painel pelo domínio gerado do serviço **app** → `/admin`.
+
+> Cada arquivo é um único objeto `{type, data}` — é esse formato que o "Create from Schema"
+> aceita. Colar um array `[…]` dá *"Expected object, received array"*; colar o embrulho
+> `{"services":[…]}` dá *React #31 / object with keys {services}*.
 
 > O repositório precisa estar **acessível** pelo EasyPanel: ou público, ou com a conta
 > GitHub conectada no EasyPanel (Settings → Git). Se o seu EasyPanel pedir source por URL
