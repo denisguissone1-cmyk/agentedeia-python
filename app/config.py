@@ -149,3 +149,39 @@ async def set_config(parcial: dict) -> dict:
         atual["tools_descricao"].update(parcial["tools_descricao"])
     await redis_client.set(CONFIG_KEY, json.dumps(atual))
     return atual
+
+
+# ── Tokens de serviços externos ────────────────────────────────────────────────
+# Armazenados no Redis (chave config:tokens). Fallback para env vars no boot.
+
+TOKENS_KEY = "config:tokens"
+
+TOKENS_DEFAULTS = {
+    "uazapi_url":     os.getenv("UAZAPI_URL", ""),
+    "uazapi_token":   os.getenv("UAZAPI_TOKEN", ""),
+    "openai_api_key": os.getenv("OPENAI_API_KEY", ""),
+    "google_api_key": os.getenv("GOOGLE_API_KEY", ""),
+    "supabase_url":   os.getenv("SUPABASE_URL", ""),
+    "supabase_key":   os.getenv("SUPABASE_KEY", ""),
+}
+
+
+async def get_tokens() -> dict:
+    """Lê tokens do Redis; fallback para env vars. Nunca levanta exceção."""
+    tokens = dict(TOKENS_DEFAULTS)
+    try:
+        raw = await redis_client.get(TOKENS_KEY)
+        if raw:
+            salvo = json.loads(raw)
+            tokens.update({k: v for k, v in salvo.items() if v and k in tokens})
+    except Exception:
+        pass
+    return tokens
+
+
+async def set_tokens(parcial: dict) -> dict:
+    """Salva tokens parciais no Redis (só chaves conhecidas)."""
+    atual = await get_tokens()
+    atual.update({k: v for k, v in parcial.items() if k in TOKENS_DEFAULTS})
+    await redis_client.set(TOKENS_KEY, json.dumps(atual))
+    return atual
