@@ -4,16 +4,16 @@ import io
 import logging
 
 from app import clientes
-from app.clientes import UAZAPI_TOKEN, UAZAPI_URL, openai_client
+from app.config import get_tokens
 
 logger = logging.getLogger(__name__)
 
 
 async def baixar_midia(id_msg: str) -> bytes:
-    """Usa o http_client global — sem novo handshake TCP a cada chamada."""
+    tokens = await get_tokens()
     resposta = await clientes.http_client.post(
-        f"{UAZAPI_URL}/message/download",
-        headers={"token": UAZAPI_TOKEN},
+        f"{tokens['uazapi_url']}/message/download",
+        headers={"token": tokens["uazapi_token"]},
         json={"id": id_msg, "return_base64": True},
     )
     resposta.raise_for_status()
@@ -22,7 +22,7 @@ async def baixar_midia(id_msg: str) -> bytes:
 
 async def transcrever_audio(id_msg: str) -> str:
     audio_bytes = await baixar_midia(id_msg)
-    transcricao = await openai_client.audio.transcriptions.create(
+    transcricao = await clientes.openai_client.audio.transcriptions.create(
         model="whisper-1",
         file=("audio.ogg", io.BytesIO(audio_bytes), "audio/ogg"),
         language="pt",
@@ -31,13 +31,9 @@ async def transcrever_audio(id_msg: str) -> str:
 
 
 async def analisar_imagem(id_msg: str, mimetype: str = "image/jpeg") -> str:
-    """
-    Usa o mimetype real da mensagem.
-    WhatsApp sempre comprime fotos em JPEG — o padrão PNG do original estava errado.
-    """
     imagem_bytes = await baixar_midia(id_msg)
     imagem_b64   = base64.b64encode(imagem_bytes).decode()
-    resposta = await openai_client.chat.completions.create(
+    resposta = await clientes.openai_client.chat.completions.create(
         model="gpt-4o",
         messages=[{
             "role": "user",
@@ -57,10 +53,6 @@ async def analisar_imagem(id_msg: str, mimetype: str = "image/jpeg") -> str:
 
 
 async def analisar_documento(id_msg: str, mimetype: str = "application/pdf") -> str:
-    """
-    Usa generate_content_async — nativo async, sem to_thread.
-    _genai_model já configurado no lifespan, não reconfigura aqui.
-    """
     doc_bytes = await baixar_midia(id_msg)
     doc_b64   = base64.b64encode(doc_bytes).decode()
     resposta  = await clientes._genai_model.generate_content_async([
@@ -71,10 +63,6 @@ async def analisar_documento(id_msg: str, mimetype: str = "application/pdf") -> 
 
 
 async def processar_mensagem_por_tipo(dados: dict) -> str:
-    """
-    Roteador de tipos de mensagem.
-    Try/except por tipo: falha em áudio não derruba a mensagem inteira.
-    """
     tipo   = dados["messagetype"]
     id_msg = dados["id_msg"]
 
