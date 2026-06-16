@@ -238,7 +238,7 @@ def _webhook_url(request: Request, tokens: dict) -> str:
 
 
 @router.get("/config", response_class=HTMLResponse)
-async def config_form(request: Request, salvo: str = "", erro: str = "", wmsg: str = ""):
+async def config_form(request: Request, salvo: str = "", erro: str = "", wmsg: str = "", werro: str = ""):
     if not logado(request):
         return RedirectResponse("/admin/login", status_code=302)
     c = await get_config()
@@ -247,7 +247,7 @@ async def config_form(request: Request, salvo: str = "", erro: str = "", wmsg: s
         "config.html",
         {"request": request, "ativo": "config", "titulo": "Configurações",
          "c": c, "t": t, "salvo": bool(salvo), "erro": erro,
-         "webhook_url": _webhook_url(request, t), "wmsg": wmsg},
+         "webhook_url": _webhook_url(request, t), "wmsg": wmsg, "werro": werro},
     )
 
 
@@ -289,29 +289,46 @@ async def tokens_post(request: Request):
 
 
 async def _registrar_webhook_uazapi(url: str, tokens: dict) -> tuple[bool, str]:
-    """Registra a URL do webhook na instância UAZAPI (formato confirmado via pesquisa)."""
+    """Registra a URL do webhook na instância UAZAPI (POST {instancia}/webhook)."""
     instancia = (tokens.get("uazapi_url") or "").strip().rstrip("/")
     token = (tokens.get("uazapi_token") or "").strip()
     if not instancia or not token:
         return False, "Configure a URL e o token da UAZAPI primeiro (em Tokens)."
-    # TODO(pesquisa): chamada HTTP de setWebhook assim que o formato for confirmado.
-    return False, "Registro automático em finalização — por ora copie a URL e cole na UAZAPI."
+    import httpx
+    try:
+        async with httpx.AsyncClient(timeout=20.0) as cli:
+            resp = await cli.post(
+                f"{instancia}/webhook",
+                headers={"token": token},
+                json={
+                    "url": url,
+                    "enabled": True,
+                    "events": ["messages"],
+                    "excludeMessages": ["wasSentByApi"],
+                },
+            )
+    except Exception as exc:
+        return False, f"Não consegui falar com a UAZAPI: {exc}"
+    if resp.status_code < 300:
+        return True, f"Webhook registrado na UAZAPI: {url}"
+    return False, f"A UAZAPI respondeu {resp.status_code}: {resp.text[:160]}"
 
 
 @router.post("/webhook")
 async def webhook_config(request: Request):
     if not logado(request):
         return RedirectResponse("/admin/login", status_code=302)
+    from urllib.parse import quote
     form = await request.form()
     await set_tokens({
         "webhook_base_url": form.get("webhook_base_url", "").strip(),
         "webhook_token":    form.get("webhook_token", "").strip(),
     })
     if form.get("acao") == "registrar":
-        from urllib.parse import quote
         t = await get_tokens()
-        _ok, msg = await _registrar_webhook_uazapi(_webhook_url(request, t), t)
-        return RedirectResponse(f"/admin/config?wmsg={quote(msg)}", status_code=302)
+        ok, msg = await _registrar_webhook_uazapi(_webhook_url(request, t), t)
+        chave = "wmsg" if ok else "werro"
+        return RedirectResponse(f"/admin/config?{chave}={quote(msg)}", status_code=302)
     return RedirectResponse("/admin/config?salvo=1", status_code=302)
 
 

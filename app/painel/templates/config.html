@@ -29,7 +29,8 @@
 
 <form method="post" action="/admin/webhook" class="card" style="margin-top:16px">
   <div class="cardhead"><div class="ci" style="background:var(--vio-soft)">🔗</div>Webhook de entrada (recebe as mensagens)</div>
-  {% if wmsg %}<div class="field"><p class="ok" style="margin:0">{{ wmsg }}</p></div>{% endif %}
+  {% if wmsg %}<div class="field"><p class="ok" style="margin:0">✓ {{ wmsg }}</p></div>{% endif %}
+  {% if werro %}<div class="field"><p class="err" style="margin:0">{{ werro }}</p></div>{% endif %}
   <div class="field">
     <label>URL do webhook</label>
     <div class="desc">Cole esta URL na sua instância UAZAPI para ela entregar as mensagens à Sofia</div>
