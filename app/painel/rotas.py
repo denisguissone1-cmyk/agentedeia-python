@@ -2,7 +2,7 @@ import asyncio
 import os
 
 from fastapi import APIRouter, Form, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, Response, StreamingResponse
 from fastapi.templating import Jinja2Templates
 from langchain_community.chat_message_histories import PostgresChatMessageHistory
 from langchain_core.messages import AIMessage
@@ -343,6 +343,36 @@ async def logs_view(request: Request):
         "logs.html",
         {"request": request, "ativo": "logs", "titulo": "Logs ao vivo",
          "eventos": await _eventos_recentes(20)},
+    )
+
+
+@router.get("/logs/stream")
+async def logs_stream(request: Request):
+    """SSE: transmite ao vivo cada evento publicado no canal eventos:stream."""
+    if not logado(request):
+        return Response(status_code=401)
+
+    async def gen():
+        pubsub = redis_client.pubsub()
+        await pubsub.subscribe("eventos:stream")
+        try:
+            yield ": conectado\n\n"  # comentário inicial abre o stream
+            async for msg in pubsub.listen():
+                if msg.get("type") == "message":
+                    data = msg["data"]
+                    if isinstance(data, (bytes, bytearray)):
+                        data = data.decode("utf-8", "ignore")
+                    yield f"data: {data}\n\n"
+        finally:
+            try:
+                await pubsub.unsubscribe("eventos:stream")
+                await pubsub.aclose()
+            except Exception:
+                pass
+
+    return StreamingResponse(
+        gen(), media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )
 
 

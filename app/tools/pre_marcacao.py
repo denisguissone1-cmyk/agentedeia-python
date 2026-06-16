@@ -1,9 +1,10 @@
 from langchain.tools import tool
 
+from app import eventos
 from app.tools.base import GOOGLE_CALENDAR_ID, asyncio, get_calendar_service
 
 
-def criar(descricao: str):
+def criar(number: str, descricao: str):
     @tool("pre_marcacao", description=descricao)
     async def pre_marcacao(start: str, end: str, summary: str, description: str) -> str:
         def _criar():
@@ -19,6 +20,7 @@ def criar(descricao: str):
             ).execute()
 
         resultado = await asyncio.to_thread(_criar)
+        await eventos.agendamento(number, urgente="URGENTE" in (summary or "").upper())
         return f"Pré-marcação criada com ID {resultado.get('id')}."
 
     return pre_marcacao

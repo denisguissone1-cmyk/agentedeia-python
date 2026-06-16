@@ -18,12 +18,14 @@ async def montar_tools(number: str) -> list:
         return ativas.get(nome) is not False  # ausente/True → ligada
 
     tools = []
+    # Tools que precisam saber de qual número é a conversa (closure com number).
     if _ligada("cadastrar"):
         tools.append(cadastrar.criar(number, descricoes["cadastrar"]))
+    if _ligada("pre_marcacao"):
+        tools.append(pre_marcacao.criar(number, descricoes["pre_marcacao"]))
     _sem_numero = {
         "buscar_info": buscar_info,
         "consultar_agenda": consultar_agenda,
-        "pre_marcacao": pre_marcacao,
         "desmarcar": desmarcar,
     }
     for nome, modulo in _sem_numero.items():

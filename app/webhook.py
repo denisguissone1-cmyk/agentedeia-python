@@ -7,7 +7,7 @@ import uuid
 from fastapi import HTTPException
 from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential
 
-from app import clientes
+from app import clientes, eventos
 from app.agente import chamar_agente
 from app.bloqueios import ja_processada, verifica_rate_limit, verificar_bloqueios_rapido
 from app.buffer import buffer_mensagens
@@ -172,6 +172,7 @@ async def processar_em_background(body: dict) -> None:
         if rate == "aviso":
             logger.warning(f"[{req_id}] [{number}] Rate limit — avisando usuário")
             await enviar_aviso_rate_limit(number)
+            await eventos.aviso_rate(dados["nome"], number)
             return
         elif rate == "bloqueado":
             logger.warning(f"[{req_id}] [{number}] Rate limit — ignorando silenciosamente")
@@ -182,12 +183,14 @@ async def processar_em_background(body: dict) -> None:
         if status == "bloquear_humano_bot":
             await inserir_na_memoria(number, dados["txtmessage"], role="ai")
             logger.info(f"[{req_id}] [{number}] Atendente humano assumiu — bot silenciado")
+            await eventos.humano_assumiu(dados["nome"], number)
             return
 
         if status == "bloquear_wpp":
             return
 
         texto_mensagem = await processar_mensagem_por_tipo(dados)
+        await eventos.recebida(dados["nome"], number, dados["messagetype"])
 
         if status == "bloquear_individual":
             await inserir_na_memoria(number, texto_mensagem, role="human")
@@ -226,6 +229,7 @@ async def processar_em_background(body: dict) -> None:
 
         await enviar_resposta(number, texto_resposta)
         logger.info(f"[{req_id}] [{number}] ✓ Resposta enviada ({len(texto_resposta)} chars)")
+        await eventos.respondida(dados["nome"], number)
 
     except Exception as exc:
         logger.error(f"[{req_id}] [{number}] Erro inesperado: {exc}", exc_info=True)

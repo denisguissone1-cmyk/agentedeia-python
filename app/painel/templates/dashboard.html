@@ -11,7 +11,7 @@
   <div>
     <div class="sec"><h2>O que está acontecendo agora</h2><a class="lk" href="/admin/logs">Ver tudo →</a></div>
     <div class="logwrap">
-      <div class="feed">
+      <div class="feed" id="feed-mini">
         {% for ev in eventos %}
         <div class="ev {{ ev.cor|default('e-blue') }}"><div class="ei">{{ ev.icone|default('💬') }}</div><div class="etxt"><div class="em">{{ ev.texto }}</div><div class="et">{{ ev.quando|default('') }}</div></div></div>
         {% else %}
@@ -29,4 +29,25 @@
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ---- feed ao vivo do dashboard (SSE) ----
+const feedMini=document.getElementById('feed-mini');
+const vazioMini=feedMini.querySelector('.empty');
+const es=new EventSource('/admin/logs/stream');
+es.onmessage=e=>{
+  let ev; try{ ev=JSON.parse(e.data); }catch(_){ return; }
+  if(vazioMini) vazioMini.remove();
+  const d=document.createElement('div');
+  d.className='ev '+(ev.cor||'e-blue');
+  d.innerHTML='<div class="ei"></div><div class="etxt"><div class="em"></div><div class="et"></div></div>';
+  d.querySelector('.ei').textContent=ev.icone||'💬';
+  d.querySelector('.em').textContent=ev.texto||'';
+  d.querySelector('.et').textContent=ev.quando||'agora';
+  feedMini.insertBefore(d,feedMini.firstChild);
+  while(feedMini.children.length>7) feedMini.lastChild.remove();
+};
+</script>
 {% endblock %}

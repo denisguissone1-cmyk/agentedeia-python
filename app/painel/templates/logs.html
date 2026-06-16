@@ -33,5 +33,24 @@ document.querySelectorAll('.fchip').forEach(c=>c.addEventListener('click',()=>{
   document.querySelectorAll('.fchip').forEach(x=>x.classList.remove('on'));
   c.classList.add('on');curFilter=c.dataset.f;applyFilter();
 }));
+
+// ---- stream ao vivo (SSE) ----
+const feed=document.getElementById('feed-full');
+const vazio=feed.querySelector('.empty');
+function novoEvento(ev){
+  if(vazio) vazio.remove();
+  const d=document.createElement('div');
+  d.className='ev '+(ev.cor||'e-blue');
+  d.dataset.f=ev.filtro||'msg';
+  d.innerHTML='<div class="ei"></div><div class="etxt"><div class="em"></div><div class="et"></div></div>';
+  d.querySelector('.ei').textContent=ev.icone||'💬';   // textContent: seguro contra HTML no nome
+  d.querySelector('.em').textContent=ev.texto||'';
+  d.querySelector('.et').textContent=ev.quando||'agora';
+  if(curFilter!=='all'&&d.dataset.f!==curFilter) d.style.display='none';
+  feed.insertBefore(d,feed.firstChild);
+  while(feed.children.length>60) feed.lastChild.remove();
+}
+const es=new EventSource('/admin/logs/stream');
+es.onmessage=e=>{ try{ novoEvento(JSON.parse(e.data)); }catch(_){} };
 </script>
 {% endblock %}
