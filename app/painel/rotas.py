@@ -7,8 +7,8 @@ from fastapi.templating import Jinja2Templates
 from langchain_community.chat_message_histories import PostgresChatMessageHistory
 from langchain_core.messages import AIMessage
 
-from app.clientes import POSTGRES_CONN, supabase_client
-from app.config import get_config, redis_client, set_config
+from app.clientes import POSTGRES_CONN, get_db_conn, refresh_clients
+from app.config import get_config, get_tokens, redis_client, set_config, set_tokens
 from app.painel.auth import PAINEL_PASS_HASH, PAINEL_USER, conferir, logado
 
 router = APIRouter(prefix="/admin")
@@ -90,10 +90,15 @@ async def sessoes(request: Request):
         return RedirectResponse("/admin/login", status_code=302)
 
     def _listar():
-        return supabase_client.table("cadastro").select("remoteJid,nomeusuario").execute()
+        conn = get_db_conn()
+        try:
+            with conn.cursor() as cur:
+                cur.execute('SELECT "remoteJid", nomeusuario FROM cadastro ORDER BY "remoteJid"')
+                return cur.fetchall()
+        finally:
+            conn.close()
 
-    res = await asyncio.to_thread(_listar)
-    linhas = res.data or []
+    linhas = await asyncio.to_thread(_listar) or []
     sessoes_lista = []
     for row in linhas:
         numero = row["remoteJid"]
@@ -142,3 +147,30 @@ async def despausar(request: Request, numero: str):
         return RedirectResponse("/admin/login", status_code=302)
     await redis_client.delete(f"{numero}_block")
     return RedirectResponse(f"/admin/sessoes/{numero}", status_code=302)
+
+
+_CAMPOS_TOKENS = [
+    "uazapi_url", "uazapi_token", "openai_api_key",
+    "google_api_key", "supabase_url", "supabase_key",
+]
+
+
+@router.get("/tokens", response_class=HTMLResponse)
+async def tokens_form(request: Request, salvo: str = ""):
+    if not logado(request):
+        return RedirectResponse("/admin/login", status_code=302)
+    t = await get_tokens()
+    return templates.TemplateResponse(
+        "tokens.html", {"request": request, "t": t, "salvo": bool(salvo), "erro": ""}
+    )
+
+
+@router.post("/tokens", response_class=HTMLResponse)
+async def tokens_post(request: Request):
+    if not logado(request):
+        return RedirectResponse("/admin/login", status_code=302)
+    form = await request.form()
+    parcial = {k: form.get(k, "") for k in _CAMPOS_TOKENS}
+    await set_tokens(parcial)
+    await refresh_clients()
+    return RedirectResponse("/admin/tokens?salvo=1", status_code=302)
