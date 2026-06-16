@@ -26,7 +26,7 @@ async def receber_mensagem(request: Request):
         body = await request.json()
     except Exception:
         return JSONResponse(status_code=400, content={"detail": "JSON inválido"})
-    validar_token_webhook(body)
+    await validar_token_webhook(body)
     await clientes.arq_pool.enqueue_job("processar_mensagem", body)
     return {"ok": True}
 

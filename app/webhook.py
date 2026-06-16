@@ -2,7 +2,6 @@ import asyncio
 import hmac
 import json
 import logging
-import os
 import uuid
 
 from fastapi import HTTPException
@@ -18,7 +17,6 @@ from app.memoria import inserir_na_memoria
 from app.midia import processar_mensagem_por_tipo
 
 logger = logging.getLogger(__name__)
-WEBHOOK_TOKEN = os.getenv("WEBHOOK_TOKEN", "")
 
 
 def calcular_typing_ms(texto: str) -> int:
@@ -142,11 +140,14 @@ async def enviar_fallback(number: str) -> None:
         logger.error(f"Falha até no fallback para {number}: {exc}")
 
 
-def validar_token_webhook(body: dict) -> None:
-    if not WEBHOOK_TOKEN:
+async def validar_token_webhook(body: dict) -> None:
+    """Valida o token do webhook lendo o valor atual (Redis/painel). Vazio = sem validação."""
+    tokens = await get_tokens()
+    esperado = tokens.get("webhook_token", "")
+    if not esperado:
         return
-    token_recebido = body.get("token", "")
-    if not hmac.compare_digest(token_recebido, WEBHOOK_TOKEN):
+    recebido = body.get("token", "")
+    if not hmac.compare_digest(recebido, esperado):
         raise HTTPException(status_code=401, detail="Token inválido")
 
 

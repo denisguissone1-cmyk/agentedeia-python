@@ -190,12 +190,16 @@ async def set_config(parcial: dict) -> dict:
 TOKENS_KEY = "config:tokens"
 
 TOKENS_DEFAULTS = {
-    "uazapi_url":     os.getenv("UAZAPI_URL", ""),
-    "uazapi_token":   os.getenv("UAZAPI_TOKEN", ""),
-    "openai_api_key": os.getenv("OPENAI_API_KEY", ""),
-    "google_api_key": os.getenv("GOOGLE_API_KEY", ""),
-    "supabase_url":   os.getenv("SUPABASE_URL", ""),
-    "supabase_key":   os.getenv("SUPABASE_KEY", ""),
+    "uazapi_url":       os.getenv("UAZAPI_URL", ""),
+    "uazapi_token":     os.getenv("UAZAPI_TOKEN", ""),
+    "openai_api_key":   os.getenv("OPENAI_API_KEY", ""),
+    "google_api_key":   os.getenv("GOOGLE_API_KEY", ""),
+    "supabase_url":     os.getenv("SUPABASE_URL", ""),
+    "supabase_key":     os.getenv("SUPABASE_KEY", ""),
+    # Webhook de ENTRADA (UAZAPI → este app). base_url é o endereço público do app
+    # (ex.: https://meu-dominio.com); a rota é sempre /webhook. token valida o POST.
+    "webhook_base_url": os.getenv("WEBHOOK_BASE_URL", ""),
+    "webhook_token":    os.getenv("WEBHOOK_TOKEN", ""),
 }
 
 

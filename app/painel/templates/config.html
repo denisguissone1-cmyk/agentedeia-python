@@ -26,4 +26,41 @@
     <div class="field" style="display:flex;justify-content:flex-end"><button type="submit" class="btn btn-pri">Salvar e recarregar</button></div>
   </form>
 </div>
+
+<form method="post" action="/admin/webhook" class="card" style="margin-top:16px">
+  <div class="cardhead"><div class="ci" style="background:var(--vio-soft)">🔗</div>Webhook de entrada (recebe as mensagens)</div>
+  {% if wmsg %}<div class="field"><p class="ok" style="margin:0">{{ wmsg }}</p></div>{% endif %}
+  <div class="field">
+    <label>URL do webhook</label>
+    <div class="desc">Cole esta URL na sua instância UAZAPI para ela entregar as mensagens à Sofia</div>
+    <div class="ctl">
+      <input type="text" id="whurl" value="{{ webhook_url }}" readonly style="width:100%;font-family:'JetBrains Mono',monospace;font-size:12.5px">
+      <button type="button" class="btn" onclick="copiarWebhook()">Copiar</button>
+    </div>
+  </div>
+  <div class="field">
+    <label>Endereço público do app (base URL)</label>
+    <div class="desc">Seu domínio ou túnel (ex.: https://meu-dominio.com ou https://abc123.ngrok.io). A rota /webhook é acrescentada sozinha. Deixe vazio para deduzir automaticamente.</div>
+    <div class="ctl"><input type="text" name="webhook_base_url" value="{{ t.webhook_base_url }}" placeholder="https://meu-dominio.com" style="width:100%"></div>
+  </div>
+  <div class="field">
+    <label>Token de segurança do webhook</label>
+    <div class="desc">Se preenchido, a UAZAPI precisa enviar este token no corpo, senão o app rejeita (401). Vazio = sem validação.</div>
+    <div class="ctl"><input type="password" name="webhook_token" value="{{ t.webhook_token }}" autocomplete="off" style="width:100%"></div>
+  </div>
+  <div class="field" style="display:flex;justify-content:flex-end;gap:8px">
+    <button type="submit" class="btn">Salvar</button>
+    <button type="submit" name="acao" value="registrar" class="btn btn-pri">Registrar na UAZAPI</button>
+  </div>
+</form>
+
+<script>
+function copiarWebhook(){
+  var i=document.getElementById('whurl');
+  navigator.clipboard.writeText(i.value).then(function(){
+    var b=event.target; var t=b.textContent; b.textContent='Copiado ✓';
+    setTimeout(function(){b.textContent=t},1500);
+  });
+}
+</script>
 {% endblock %}
