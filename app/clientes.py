@@ -7,6 +7,7 @@ refresh_clients() para aplicar sem restart.
 UAZAPI_URL e UAZAPI_TOKEN não ficam aqui — são lidos via get_tokens() em cada chamada
 em webhook.py e midia.py, para que mudanças valham imediatamente.
 """
+import asyncio
 import os
 import threading
 from contextlib import asynccontextmanager
@@ -49,6 +50,29 @@ _calendar_service = None
 def get_db_conn():
     """Conexão psycopg2 ao Postgres interno (síncrona — use via asyncio.to_thread)."""
     return psycopg2.connect(POSTGRES_CONN, cursor_factory=psycopg2.extras.RealDictCursor)
+
+
+def garantir_schema() -> None:
+    """Cria a tabela `cadastro` se não existir (idempotente).
+
+    Permite subir em qualquer Postgres gerenciado (EasyPanel, RDS, etc.) sem depender
+    do init.sql. Nunca derruba o boot: se o banco ainda não respondeu, segue em frente.
+    """
+    if not POSTGRES_CONN:
+        return
+    try:
+        conn = psycopg2.connect(POSTGRES_CONN)
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    'CREATE TABLE IF NOT EXISTS cadastro ('
+                    '"remoteJid" TEXT PRIMARY KEY, nomeusuario TEXT)'
+                )
+            conn.commit()
+        finally:
+            conn.close()
+    except Exception:
+        pass
 
 
 def get_calendar_service():
@@ -98,6 +122,7 @@ async def lifespan(app: FastAPI):
 
     global http_client, arq_pool
     http_client = httpx.AsyncClient(timeout=30.0)
+    await asyncio.to_thread(garantir_schema)
     await refresh_clients()
     arq_pool = await create_pool(redis_settings())
     yield

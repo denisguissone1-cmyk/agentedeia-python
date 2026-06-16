@@ -1,4 +1,6 @@
 """Worker arq: inicializa os clientes uma vez e consome a fila."""
+import asyncio
+
 import httpx
 
 from app import clientes
@@ -12,6 +14,7 @@ async def processar_mensagem(ctx, body: dict) -> None:
 
 async def startup(ctx) -> None:
     clientes.http_client = httpx.AsyncClient(timeout=30.0)
+    await asyncio.to_thread(clientes.garantir_schema)
     await clientes.refresh_clients()
 
 
