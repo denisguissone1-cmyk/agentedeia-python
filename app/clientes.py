@@ -1,4 +1,12 @@
-"""Clientes globais (criados uma vez) e ciclo de vida do servidor."""
+"""Clientes globais e ciclo de vida do servidor.
+
+Os clientes de IA (OpenAI, Gemini) são inicializados no lifespan a partir dos tokens
+armazenados no Redis (ou env vars como fallback). Ao salvar tokens no painel, chame
+refresh_clients() para aplicar sem restart.
+
+UAZAPI_URL e UAZAPI_TOKEN não ficam aqui — são lidos via get_tokens() em cada chamada
+em webhook.py e midia.py, para que mudanças valham imediatamente.
+"""
 import os
 import threading
 from contextlib import asynccontextmanager
@@ -6,41 +14,38 @@ from typing import Optional
 
 import google.generativeai as genai
 import httpx
+import psycopg2
+import psycopg2.extras
 from dotenv import load_dotenv
 from fastapi import FastAPI
 from google.oauth2 import service_account
 from googleapiclient.discovery import build as gcal_build
 from langchain_google_genai import ChatGoogleGenerativeAI
 from openai import AsyncOpenAI
-from supabase import create_client
 
-from app.config import redis_client  # fonte única do Redis
+from app.config import get_tokens, redis_client  # fonte única do Redis
 
 load_dotenv()
 
-SUPABASE_URL          = os.getenv("SUPABASE_URL")
-SUPABASE_KEY          = os.getenv("SUPABASE_KEY")
-OPENAI_API_KEY        = os.getenv("OPENAI_API_KEY")
-GOOGLE_API_KEY        = os.getenv("GOOGLE_API_KEY")
-UAZAPI_TOKEN          = os.getenv("UAZAPI_TOKEN")
-UAZAPI_URL            = os.getenv("UAZAPI_URL")
+# Variáveis de infraestrutura (URLs internas do compose ou arquivos — não vão pro painel)
 POSTGRES_CONN         = os.getenv("POSTGRES_CONN")
 GOOGLE_CALENDAR_ID    = os.getenv("GOOGLE_CALENDAR_ID")
 GOOGLE_CALENDAR_CREDS = os.getenv("GOOGLE_CALENDAR_CREDS")
 
-supabase_client = create_client(SUPABASE_URL, SUPABASE_KEY)
-openai_client   = AsyncOpenAI(api_key=OPENAI_API_KEY)
+# Clientes de IA — None até o lifespan/refresh_clients() inicializá-los
+http_client:   Optional[httpx.AsyncClient]          = None
+openai_client: Optional[AsyncOpenAI]                = None
+llm:           Optional[ChatGoogleGenerativeAI]     = None
+_genai_model:  Optional[genai.GenerativeModel]      = None
 
-llm = ChatGoogleGenerativeAI(
-    model="gemini-1.5-flash",
-    google_api_key=GOOGLE_API_KEY,
-    temperature=0.3,
-)
-
-http_client: Optional[httpx.AsyncClient] = None
-_genai_model: Optional[genai.GenerativeModel] = None
-_calendar_lock = threading.Lock()
+# Google Calendar — lazy thread-safe
+_calendar_lock    = threading.Lock()
 _calendar_service = None
+
+
+def get_db_conn():
+    """Conexão psycopg2 ao Postgres interno (síncrona — use via asyncio.to_thread)."""
+    return psycopg2.connect(POSTGRES_CONN, cursor_factory=psycopg2.extras.RealDictCursor)
 
 
 def get_calendar_service():
@@ -58,11 +63,34 @@ def get_calendar_service():
     return _calendar_service
 
 
+async def refresh_clients() -> None:
+    """Re-cria os clientes de IA com os tokens atuais (Redis ou env vars).
+
+    Chamado automaticamente no lifespan e pelo painel ao salvar tokens.
+    UAZAPI não precisa de refresh — é lido por chamada via get_tokens().
+    """
+    global openai_client, llm, _genai_model
+    tokens = await get_tokens()
+
+    oai_key = tokens.get("openai_api_key")
+    if oai_key:
+        openai_client = AsyncOpenAI(api_key=oai_key)
+
+    ggl_key = tokens.get("google_api_key")
+    if ggl_key:
+        llm = ChatGoogleGenerativeAI(
+            model="gemini-1.5-flash",
+            google_api_key=ggl_key,
+            temperature=0.3,
+        )
+        genai.configure(api_key=ggl_key)
+        _genai_model = genai.GenerativeModel("gemini-1.5-flash")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global http_client, _genai_model
-    http_client  = httpx.AsyncClient(timeout=30.0)
-    genai.configure(api_key=GOOGLE_API_KEY)
-    _genai_model = genai.GenerativeModel("gemini-1.5-flash")
+    global http_client
+    http_client = httpx.AsyncClient(timeout=30.0)
+    await refresh_clients()
     yield
     await http_client.aclose()
