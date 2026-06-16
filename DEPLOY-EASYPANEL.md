@@ -5,24 +5,22 @@ já interligado: **app** (painel + webhook) + **worker** (fila) + **Postgres** +
 
 ## Passo a passo
 
-O **Create from Schema** do EasyPanel cria **um serviço por vez** (espera um objeto
-`{ "type": …, "data": … }`). Então cole os 4 arquivos da pasta [`easypanel/`](easypanel/),
-**nesta ordem** (bancos primeiro):
+O `createFromSchema` do EasyPanel espera o **objeto raiz `{ "services": [ … ] }`** (um
+array com os serviços). Cole o [`easypanel-schema.json`](easypanel-schema.json) inteiro,
+de uma vez.
 
-1. Crie um projeto chamado **`sofia`** (é o `projectName` dos arquivos; se quiser outro
-   nome, troque `"projectName": "sofia"` nos 4).
-2. Dentro do projeto, em **Create Service → From Schema**, cole e confirme cada um:
-   1. `easypanel/1-postgres.json`
-   2. `easypanel/2-redis.json`
-   3. `easypanel/3-app.json`
-   4. `easypanel/4-worker.json`
+1. **Crie antes o projeto `sofia`** no EasyPanel (dependendo da versão o import não cria
+   o projeto sozinho e retorna 400 se o `projectName` não existir). Se quiser outro nome,
+   troque os `"projectName": "sofia"` no JSON.
+2. No projeto, use **Create from Schema** e cole o conteúdo de `easypanel-schema.json`.
 3. O `app` e o `worker` usam a **imagem pronta** `ghcr.io/denisguissone1-cmyk/agentedeia-python:latest`
    (buildada pelo GitHub Action — veja abaixo). O EasyPanel só baixa e roda.
 4. Acesse o painel pelo domínio gerado do serviço **app** → `/admin`.
 
-> Cada arquivo é um único objeto `{type, data}` — é esse formato que o "Create from Schema"
-> aceita. Colar um array `[…]` dá *"Expected object, received array"*; colar o embrulho
-> `{"services":[…]}` dá *React #31 / object with keys {services}*.
+> Formato que funciona: raiz `{ "services": [ … ] }`. Colar um array `[…]` dá *"Expected
+> object, received array"*. No serviço `postgres` **não** inclua `username` (não é campo
+> válido do schema e dispara 400) — o superusuário `postgres` já é criado pela imagem;
+> a connection string usa ele.
 
 ## A imagem Docker (GHCR)
 
