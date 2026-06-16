@@ -5,8 +5,13 @@ já interligado: **app** (painel + webhook) + **worker** (fila) + **Postgres** +
 
 ## Passo a passo
 
-1. No EasyPanel, crie um projeto novo (ex.: `sofia`).
-2. Dentro do projeto, clique em **Create Service → Create from Schema** (ou **Template → From Schema**).
+1. No EasyPanel, crie um projeto chamado **`sofia`** (precisa ser esse nome — é o
+   `projectName` do schema; se quiser outro, troque os 4 `"projectName": "sofia"` no JSON).
+2. Importe o schema **a nível de PROJETO**, não de serviço:
+   - abra o projeto `sofia` → menu/aba **Schema** → **Import / Create from Schema**.
+   - ⚠️ Não use o "Create Service → From Schema" (esse cria **um** serviço e espera só
+     `{type, data}`; colar o `{services:[…]}` ali dá o erro *React #31 / object with keys
+     {services}*).
 3. Cole o conteúdo de `easypanel-schema.json` e confirme.
 4. O EasyPanel cria os 4 serviços. O `app` e o `worker` são buildados direto deste
    repositório no GitHub (via Dockerfile). Aguarde o primeiro build terminar.
