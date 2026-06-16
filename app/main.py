@@ -1,16 +1,17 @@
 """Cria o FastAPI, registra o webhook e o painel, e o lifespan."""
 import logging
 
-from fastapi import BackgroundTasks, FastAPI, Request
+from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.middleware.sessions import SessionMiddleware
 
+from app import clientes
 from app.clientes import lifespan
 from app.config import redis_client
 from app.painel.auth import SESSION_SECRET
 from app.painel.rotas import router as painel_router
-from app.webhook import processar_em_background, validar_token_webhook
+from app.webhook import validar_token_webhook
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 
@@ -20,13 +21,13 @@ app.include_router(painel_router)
 
 
 @app.post("/webhook")
-async def receber_mensagem(request: Request, background_tasks: BackgroundTasks):
+async def receber_mensagem(request: Request):
     try:
         body = await request.json()
     except Exception:
         return JSONResponse(status_code=400, content={"detail": "JSON inválido"})
     validar_token_webhook(body)
-    background_tasks.add_task(processar_em_background, body)
+    await clientes.arq_pool.enqueue_job("processar_mensagem", body)
     return {"ok": True}
 
 

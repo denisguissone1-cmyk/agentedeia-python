@@ -12,6 +12,19 @@ services:
       - postgres
     restart: unless-stopped
 
+  # Consome a fila durável (arq). Pode escalar: docker compose up --scale worker=3 -d
+  worker:
+    build: .
+    command: arq app.worker.WorkerSettings
+    env_file: .env
+    environment:
+      REDIS_URL: redis://redis:6379
+      POSTGRES_CONN: postgresql://elizabeth:elizabeth@postgres:5432/elizabeth
+    depends_on:
+      - redis
+      - postgres
+    restart: unless-stopped
+
   redis:
     image: redis:7-alpine
     volumes:

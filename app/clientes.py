@@ -38,6 +38,9 @@ openai_client: Optional[AsyncOpenAI]                = None
 llm:           Optional[ChatGoogleGenerativeAI]     = None
 _genai_model:  Optional[genai.GenerativeModel]      = None
 
+# Pool de enfileiramento (arq) usado pela API para publicar jobs — None até o lifespan
+arq_pool:      Optional[object]                     = None
+
 # Google Calendar — lazy thread-safe
 _calendar_lock    = threading.Lock()
 _calendar_service = None
@@ -89,8 +92,14 @@ async def refresh_clients() -> None:
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    global http_client
+    from arq import create_pool
+
+    from app.fila import redis_settings
+
+    global http_client, arq_pool
     http_client = httpx.AsyncClient(timeout=30.0)
     await refresh_clients()
+    arq_pool = await create_pool(redis_settings())
     yield
+    await arq_pool.close()
     await http_client.aclose()
