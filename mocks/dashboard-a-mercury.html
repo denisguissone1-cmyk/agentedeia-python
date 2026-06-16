@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mock A · Mercury Refinado</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F7F8FA;--panel:#fff;--ink:#0F172A;--mut:#64748B;--faint:#94A3B8;--line:#E7EAF0;--blue:#2563EB;--blue-soft:#EFF4FF;--green:#16A34A;--green-soft:#E9F8EF;--r:10px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);letter-spacing:-.011em;display:grid;grid-template-columns:232px 1fr;min-height:100vh}
+/* sidebar */
+aside{background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:18px 14px;position:sticky;top:0;height:100vh}
+.brand{display:flex;align-items:center;gap:9px;padding:6px 8px 18px}
+.brand .logo{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,#2563EB,#60A5FA);display:grid;place-items:center;color:#fff;font-weight:700;font-size:15px}
+.brand b{font-size:14px;font-weight:600;letter-spacing:-.03em}
+.brand span{display:block;font-size:11px;color:var(--faint);font-weight:500}
+nav{display:flex;flex-direction:column;gap:2px}
+.nav-lbl{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--faint);padding:14px 8px 6px}
+nav a{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;font-size:13.5px;font-weight:500;color:var(--mut);text-decoration:none;transition:.12s}
+nav a svg{width:17px;height:17px;stroke:currentColor;fill:none;stroke-width:1.9}
+nav a:hover{background:var(--bg);color:var(--ink)}
+nav a.on{background:var(--blue-soft);color:var(--blue)}
+.spacer{flex:1}
+.gear{border-top:1px solid var(--line);margin-top:8px;padding-top:8px}
+/* main */
+main{padding:22px 28px 40px;max-width:1080px}
+.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
+.top h1{font-size:20px;font-weight:600;letter-spacing:-.03em}
+.top h1 small{display:block;font-size:12.5px;color:var(--mut);font-weight:400;letter-spacing:0}
+.pill{display:inline-flex;align-items:center;gap:7px;background:var(--green-soft);color:var(--green);font-size:12px;font-weight:600;padding:6px 12px;border-radius:999px}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 0 3px rgba(22,163,74,.18)}
+.toggle{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;color:var(--mut);margin-left:14px}
+.sw{width:34px;height:20px;border-radius:999px;background:var(--blue);position:relative}
+.sw::after{content:"";position:absolute;top:2px;right:2px;width:16px;height:16px;border-radius:50%;background:#fff}
+/* stats */
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:15px 16px}
+.stat .k{font-size:11.5px;color:var(--mut);font-weight:500;display:flex;align-items:center;gap:6px}
+.stat .v{font-size:26px;font-weight:700;letter-spacing:-.04em;margin-top:7px}
+.stat .v small{font-size:12px;font-weight:500;color:var(--green);letter-spacing:0;margin-left:4px}
+.stat.fila .v{color:var(--blue)}
+/* section */
+.sec{display:flex;align-items:center;justify-content:space-between;margin:6px 2px 12px}
+.sec h2{font-size:13.5px;font-weight:600}
+.sec a{font-size:12px;color:var(--blue);text-decoration:none;font-weight:500}
+.grid2{display:grid;grid-template-columns:1.55fr 1fr;gap:18px}
+/* tool cards */
+.tools{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tool{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:14px;transition:.12s}
+.tool:hover{border-color:#CBD5E1;box-shadow:0 4px 14px rgba(15,23,42,.05)}
+.tool .h{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}
+.tool .nm{font-size:13px;font-weight:600;font-family:'JetBrains Mono',monospace;display:flex;align-items:center;gap:8px}
+.tool .ic{width:26px;height:26px;border-radius:7px;background:var(--blue-soft);color:var(--blue);display:grid;place-items:center;font-size:13px}
+.tool p{font-size:11.5px;color:var(--mut);line-height:1.5}
+.miniSw{width:30px;height:18px;border-radius:999px;background:var(--green);position:relative;flex:none}
+.miniSw::after{content:"";position:absolute;top:2px;right:2px;width:14px;height:14px;border-radius:50%;background:#fff}
+.miniSw.off{background:#CBD5E1}.miniSw.off::after{right:auto;left:2px}
+/* prompt accordion */
+.acc{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
+.acc .row{display:flex;align-items:center;justify-content:space-between;padding:13px 15px;cursor:pointer;font-size:13px;font-weight:600}
+.acc .row .chev{color:var(--faint);transition:.15s}
+.acc .row.open .chev{transform:rotate(90deg)}
+.acc .body{border-top:1px solid var(--line);padding:14px 15px;font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--mut);line-height:1.65;white-space:pre-wrap;max-height:188px;overflow:auto}
+.acc .row+.row{border-top:1px solid var(--line)}
+/* logs */
+.logs{background:#0F172A;border-radius:var(--r);padding:13px 14px;font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.75;color:#94A3B8;height:248px;overflow:auto}
+.logs .l{white-space:nowrap}
+.logs .t{color:#475569}.logs .i{color:#38BDF8}.logs .ok{color:#34D399}.logs .w{color:#FBBF24}
+.logs .hd{display:flex;align-items:center;justify-content:space-between;color:#CBD5E1;font-family:'Inter';font-size:11.5px;font-weight:600;margin-bottom:8px}
+.live{display:inline-flex;align-items:center;gap:6px;color:#34D399;font-size:10.5px}
+.live .dot{background:#34D399;box-shadow:0 0 0 3px rgba(52,211,153,.2)}
+</style>
+</head>
+<body>
+<aside>
+  <div class="brand"><div class="logo">L</div><div><b>Leal &amp; Associados</b><span>Sofia · triagem</span></div></div>
+  <nav>
+    <a class="on" href="#"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Dashboard</a>
+    <a href="#"><svg viewBox="0 0 24 24"><path d="M14 7l-1.5-1.5a3 3 0 00-4 0L7 7m0 0l-3 3a3 3 0 000 4l4 4a3 3 0 004 0l3-3"/></svg>Tools</a>
+    <a href="#"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Prompt</a>
+    <a href="#"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>Sessões</a>
+    <a href="#"><svg viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16"/></svg>Logs</a>
+  </nav>
+  <div class="spacer"></div>
+  <div class="gear">
+    <nav>
+      <a href="#"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.6 1.6 0 00-2.7.7 1.6 1.6 0 01-3.2 0 1.6 1.6 0 00-2.7-.7l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.6 1.6 0 00-1.5-2.7 1.6 1.6 0 010-3.2 1.6 1.6 0 001.5-2.7l-.1-.1a2 2 0 112.8-2.8l.1.1a1.6 1.6 0 002.7-.7 1.6 1.6 0 013.2 0 1.6 1.6 0 002.7.7l.1-.1a2 2 0 112.8 2.8l-.1.1a1.6 1.6 0 00.7 2.7z"/></svg>Configurações</a>
+    </nav>
+  </div>
+</aside>
+<main>
+  <div class="top">
+    <h1>Dashboard<small>Visão geral do atendimento</small></h1>
+    <div style="display:flex;align-items:center">
+      <span class="pill"><span class="dot"></span>Sofia online</span>
+      <span class="toggle"><span class="sw"></span>Bot ativo</span>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="k">Sessões ativas</div><div class="v">18</div></div>
+    <div class="stat"><div class="k">Mensagens hoje</div><div class="v">342<small>+12%</small></div></div>
+    <div class="stat fila"><div class="k">Fila (pendentes)</div><div class="v">3</div></div>
+    <div class="stat"><div class="k">Agendamentos</div><div class="v">7</div></div>
+  </div>
+
+  <div class="grid2">
+    <div>
+      <div class="sec"><h2>Tools</h2><a href="#">Gerenciar →</a></div>
+      <div class="tools">
+        <div class="tool"><div class="h"><span class="nm"><span class="ic">＋</span>cadastrar</span><span class="miniSw"></span></div><p>Salva o nome do cliente no banco do escritório.</p></div>
+        <div class="tool"><div class="h"><span class="nm"><span class="ic">🔍</span>buscar_info</span><span class="miniSw"></span></div><p>RAG na base: valores, áreas, documentos por área.</p></div>
+        <div class="tool"><div class="h"><span class="nm"><span class="ic">📅</span>consultar_agenda</span><span class="miniSw"></span></div><p>Verifica horários livres antes de marcar.</p></div>
+        <div class="tool"><div class="h"><span class="nm"><span class="ic">✓</span>pre_marcacao</span><span class="miniSw"></span></div><p>Agenda a consulta jurídica no calendário.</p></div>
+        <div class="tool"><div class="h"><span class="nm"><span class="ic">✕</span>desmarcar</span><span class="miniSw off"></span></div><p>Cancela uma consulta pelo event_id.</p></div>
+      </div>
+
+      <div class="sec" style="margin-top:24px"><h2>Prompt da Sofia</h2><a href="#">Editar →</a></div>
+      <div class="acc">
+        <div class="row open"><span>System Prompt · Sofia</span><span class="chev">›</span></div>
+        <div class="body"># ROLE
+
+Você é Sofia, atendente do escritório Leal &amp; Associados Advocacia. Tom cordial, acolhedor e profissional.
+
+# TASK: Fluxo de Triagem Jurídica
+1. Acolhimento + nome
+2. Identificação da área (trabalhista, família...)
+3. Qualificação da situação
+4. Documentos disponíveis
+5. Valor e modalidade via buscar_info
+6. Agendamento
+7. Confirmação</div>
+        <div class="row"><span>Descrição das tools</span><span class="chev">›</span></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="sec"><h2>Logs ao vivo</h2><a href="#">Abrir →</a></div>
+      <div class="logs">
+        <div class="hd"><span>webhook · stream</span><span class="live"><span class="dot"></span>live</span></div>
+        <div class="l"><span class="t">12:04:11</span> <span class="i">[a3f1]</span> 5561•••42 msg recebida tipo=text</div>
+        <div class="l"><span class="t">12:04:11</span> <span class="ok">[a3f1]</span> buffer ok · 1 msg</div>
+        <div class="l"><span class="t">12:04:13</span> <span class="i">[a3f1]</span> → agente (88 chars)</div>
+        <div class="l"><span class="t">12:04:15</span> <span class="ok">[a3f1]</span> ✓ resposta enviada</div>
+        <div class="l"><span class="t">12:05:02</span> <span class="i">[b7c2]</span> 5511•••08 áudio → whisper</div>
+        <div class="l"><span class="t">12:05:04</span> <span class="w">[b7c2]</span> rate-limit aviso</div>
+        <div class="l"><span class="t">12:05:30</span> <span class="i">[c9d0]</span> pre_marcacao URGENTE criada</div>
+        <div class="l"><span class="t">12:05:31</span> <span class="ok">[c9d0]</span> ✓ resposta enviada</div>
+        <div class="l"><span class="t">12:06:10</span> <span class="i">[d2e4]</span> worker picked job · fila=2</div>
+      </div>
+    </div>
+  </div>
+</main>
+</body>
+</html>

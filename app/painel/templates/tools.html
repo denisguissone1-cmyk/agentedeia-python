@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<div class="sec"><h2>Ferramentas da Sofia</h2><span style="font-size:12.5px;color:var(--faint)">As ações que a Sofia pode executar durante a conversa</span></div>
+{% if salvo %}<p class="ok">✓ Tool atualizada</p>{% endif %}
+<div class="tools">
+  {% for t in tools %}
+  <div class="tool">
+    <div class="h">
+      <div class="ic" style="background:{{ t.bg }}">{{ t.icone }}</div>
+      <form method="post" action="/admin/tools/{{ t.nome }}/toggle" style="margin:0">
+        <button type="submit" class="sw2 {% if not t.ativa %}off{% endif %}" title="{% if t.ativa %}Desligar{% else %}Ligar{% endif %} {{ t.nome }}" aria-label="alternar {{ t.nome }}"></button>
+      </form>
+    </div>
+    <div class="nm">{{ t.nome }}</div>
+    <p>{{ t.descricao }}</p>
+    <div class="ft">{% if t.ativa %}Ativa{% else %}Desligada{% endif %}</div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

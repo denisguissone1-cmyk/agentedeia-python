@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mock C · Soft SaaS</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#F4F4F8;--panel:#fff;--ink:#1A1825;--mut:#6B6880;--faint:#A5A2B8;--line:#ECEAF3;--vio:#6D5DF6;--vio-soft:#EFEDFE;--pink:#EC6F9C;--amber:#F5A524;--grn:#2BB673;--r:16px;--sh:0 2px 8px rgba(26,24,37,.04),0 12px 28px rgba(26,24,37,.05)}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);letter-spacing:-.012em;display:grid;grid-template-columns:240px 1fr;min-height:100vh}
+aside{padding:20px 16px;display:flex;flex-direction:column;position:sticky;top:0;height:100vh}
+.brand{display:flex;align-items:center;gap:11px;padding:6px 8px 20px}
+.brand .logo{width:36px;height:36px;border-radius:11px;background:linear-gradient(135deg,#6D5DF6,#A78BFA);display:grid;place-items:center;color:#fff;font-weight:800;font-size:17px;box-shadow:0 6px 16px rgba(109,93,246,.35)}
+.brand b{font-size:14px;font-weight:700;letter-spacing:-.03em}
+.brand span{display:block;font-size:11.5px;color:var(--faint);font-weight:500}
+nav{display:flex;flex-direction:column;gap:4px}
+nav a{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:11px;font-size:13.5px;font-weight:600;color:var(--mut);text-decoration:none;transition:.14s}
+nav a svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2}
+nav a:hover{background:#fff;color:var(--ink)}
+nav a.on{background:var(--panel);color:var(--vio);box-shadow:var(--sh)}
+.spacer{flex:1}
+.gear{margin-top:8px}
+main{padding:24px 30px 44px;max-width:1100px}
+.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+.top h1{font-size:22px;font-weight:800;letter-spacing:-.04em}
+.top h1 small{display:block;font-size:13px;color:var(--mut);font-weight:500;letter-spacing:-.01em;margin-top:3px}
+.pill{display:inline-flex;align-items:center;gap:8px;background:#fff;color:var(--grn);font-size:12.5px;font-weight:700;padding:9px 15px;border-radius:999px;box-shadow:var(--sh)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--grn);box-shadow:0 0 0 4px rgba(43,182,115,.16)}
+.toggle{display:inline-flex;align-items:center;gap:9px;font-size:13px;font-weight:600;color:var(--mut);margin-left:14px}
+.sw{width:38px;height:22px;border-radius:999px;background:var(--vio);position:relative}
+.sw::after{content:"";position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;background:#fff}
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px}
+.stat{background:var(--panel);border-radius:var(--r);padding:18px;box-shadow:var(--sh)}
+.stat .ic{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;font-size:16px;margin-bottom:11px}
+.stat .k{font-size:12px;color:var(--mut);font-weight:600}
+.stat .v{font-size:28px;font-weight:800;letter-spacing:-.05em;margin-top:4px}
+.i-vio{background:var(--vio-soft);color:var(--vio)}.i-pink{background:#FDEDF3;color:var(--pink)}.i-amb{background:#FEF3E0;color:var(--amber)}.i-grn{background:#E5F6EE;color:var(--grn)}
+.sec{display:flex;align-items:center;justify-content:space-between;margin:8px 4px 14px}
+.sec h2{font-size:15px;font-weight:700;letter-spacing:-.02em}
+.sec a{font-size:12.5px;color:var(--vio);text-decoration:none;font-weight:600}
+.grid2{display:grid;grid-template-columns:1.5fr 1fr;gap:20px}
+.tools{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.tool{background:var(--panel);border-radius:14px;padding:16px;box-shadow:var(--sh);transition:.14s}
+.tool:hover{transform:translateY(-2px)}
+.tool .h{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.tool .ic{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;font-size:16px}
+.tool .nm{font-size:13.5px;font-weight:700;margin-top:9px}
+.tool p{font-size:12px;color:var(--mut);line-height:1.55;margin-top:3px}
+.miniSw{width:34px;height:20px;border-radius:999px;background:var(--grn);position:relative;flex:none}
+.miniSw::after{content:"";position:absolute;top:2px;right:2px;width:16px;height:16px;border-radius:50%;background:#fff}
+.miniSw.off{background:#D9D6E6}.miniSw.off::after{right:auto;left:2px}
+.acc{background:var(--panel);border-radius:14px;overflow:hidden;box-shadow:var(--sh)}
+.acc .row{display:flex;align-items:center;justify-content:space-between;padding:15px 17px;cursor:pointer;font-size:13.5px;font-weight:700}
+.acc .row .chev{color:var(--faint);transition:.15s}
+.acc .row.open .chev{transform:rotate(90deg)}
+.acc .body{padding:0 17px 16px;font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--mut);line-height:1.7;white-space:pre-wrap;max-height:188px;overflow:auto}
+.acc .row+.row{border-top:1px solid var(--line)}
+.logs{background:linear-gradient(160deg,#211C3A,#15122A);border-radius:14px;padding:16px;font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.85;color:#A39FC4;height:268px;overflow:auto;box-shadow:var(--sh)}
+.logs .t{color:#615C82}.logs .i{color:#A78BFA}.logs .ok{color:#5EE6A8}.logs .w{color:var(--amber)}
+.logs .hd{display:flex;align-items:center;justify-content:space-between;color:#E4E0F5;font-family:'Inter';font-size:12px;font-weight:700;margin-bottom:10px}
+.live{display:inline-flex;align-items:center;gap:6px;color:#5EE6A8;font-size:10.5px;font-weight:600}
+.live .dot{background:#5EE6A8}
+</style>
+</head>
+<body>
+<aside>
+  <div class="brand"><div class="logo">L</div><div><b>Leal &amp; Associados</b><span>Sofia · triagem</span></div></div>
+  <nav>
+    <a class="on" href="#"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Dashboard</a>
+    <a href="#"><svg viewBox="0 0 24 24"><path d="M14 7l-1.5-1.5a3 3 0 00-4 0L7 7m0 0l-3 3a3 3 0 000 4l4 4a3 3 0 004 0l3-3"/></svg>Tools</a>
+    <a href="#"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Prompt</a>
+    <a href="#"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>Sessões</a>
+    <a href="#"><svg viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16"/></svg>Logs</a>
+  </nav>
+  <div class="spacer"></div>
+  <div class="gear"><nav>
+    <a href="#"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.6 1.6 0 00-2.7.7 1.6 1.6 0 01-3.2 0 1.6 1.6 0 00-2.7-.7l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.6 1.6 0 00-1.5-2.7 1.6 1.6 0 010-3.2 1.6 1.6 0 001.5-2.7l-.1-.1a2 2 0 112.8-2.8l.1.1a1.6 1.6 0 002.7-.7 1.6 1.6 0 013.2 0 1.6 1.6 0 002.7.7l.1-.1a2 2 0 112.8 2.8l-.1.1a1.6 1.6 0 00.7 2.7z"/></svg>Configurações</a>
+  </nav></div>
+</aside>
+<main>
+  <div class="top">
+    <h1>Olá de novo 👋<small>Veja como a Sofia está atendendo hoje</small></h1>
+    <div style="display:flex;align-items:center">
+      <span class="pill"><span class="dot"></span>Sofia online</span>
+      <span class="toggle"><span class="sw"></span>Bot ativo</span>
+    </div>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="ic i-vio">💬</div><div class="k">Sessões ativas</div><div class="v">18</div></div>
+    <div class="stat"><div class="ic i-pink">📨</div><div class="k">Mensagens hoje</div><div class="v">342</div></div>
+    <div class="stat"><div class="ic i-amb">⏳</div><div class="k">Fila pendente</div><div class="v">3</div></div>
+    <div class="stat"><div class="ic i-grn">📅</div><div class="k">Agendamentos</div><div class="v">7</div></div>
+  </div>
+  <div class="grid2">
+    <div>
+      <div class="sec"><h2>Tools</h2><a href="#">Gerenciar →</a></div>
+      <div class="tools">
+        <div class="tool"><div class="h"><div class="ic i-vio">＋</div><span class="miniSw"></span></div><div class="nm">cadastrar</div><p>Salva o nome do cliente no banco.</p></div>
+        <div class="tool"><div class="h"><div class="ic i-pink">🔍</div><span class="miniSw"></span></div><div class="nm">buscar_info</div><p>RAG: valores, áreas e documentos.</p></div>
+        <div class="tool"><div class="h"><div class="ic i-amb">📅</div><span class="miniSw"></span></div><div class="nm">consultar_agenda</div><p>Horários livres antes de marcar.</p></div>
+        <div class="tool"><div class="h"><div class="ic i-grn">✓</div><span class="miniSw"></span></div><div class="nm">pre_marcacao</div><p>Agenda a consulta no calendário.</p></div>
+        <div class="tool"><div class="h"><div class="ic i-vio">✕</div><span class="miniSw off"></span></div><div class="nm">desmarcar</div><p>Cancela consulta pelo event_id.</p></div>
+      </div>
+      <div class="sec" style="margin-top:26px"><h2>Prompt da Sofia</h2><a href="#">Editar →</a></div>
+      <div class="acc">
+        <div class="row open"><span>System Prompt · Sofia</span><span class="chev">›</span></div>
+        <div class="body"># ROLE
+Você é Sofia, atendente do escritório Leal &amp; Associados Advocacia. Tom cordial e profissional.
+
+# TASK: Fluxo de Triagem Jurídica
+1. Acolhimento + nome
+2. Identificação da área
+3. Qualificação da situação
+4. Documentos disponíveis
+5. Valor e modalidade via buscar_info
+6. Agendamento · 7. Confirmação</div>
+        <div class="row"><span>Descrição das tools</span><span class="chev">›</span></div>
+      </div>
+    </div>
+    <div>
+      <div class="sec"><h2>Logs ao vivo</h2><a href="#">Abrir →</a></div>
+      <div class="logs">
+        <div class="hd"><span>Atividade · webhook</span><span class="live"><span class="dot"></span>ao vivo</span></div>
+        <div><span class="t">12:04</span> <span class="i">[a3f1]</span> mensagem recebida · texto</div>
+        <div><span class="t">12:04</span> <span class="ok">[a3f1]</span> ✓ resposta enviada</div>
+        <div><span class="t">12:05</span> <span class="i">[b7c2]</span> áudio transcrito</div>
+        <div><span class="t">12:05</span> <span class="w">[b7c2]</span> rate-limit · aviso</div>
+        <div><span class="t">12:05</span> <span class="i">[c9d0]</span> pre_marcacao URGENTE</div>
+        <div><span class="t">12:05</span> <span class="ok">[c9d0]</span> ✓ consulta agendada</div>
+        <div><span class="t">12:06</span> <span class="i">[d2e4]</span> worker pegou job · fila=2</div>
+        <div><span class="t">12:06</span> <span class="ok">[d2e4]</span> ✓ resposta enviada</div>
+      </div>
+    </div>
+  </div>
+</main>
+</body>
+</html>

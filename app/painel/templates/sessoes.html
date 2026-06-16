@@ -1,24 +1,23 @@
 {% extends "base.html" %}
 {% block conteudo %}
-<h1>Sessões</h1>
-<div class="card" style="padding:0;overflow:hidden">
+<div class="sec"><h2>Conversas por cliente</h2><span style="font-size:12.5px;color:var(--faint)">{{ sessoes|length }} conversa{{ 's' if sessoes|length != 1 else '' }} · clique para abrir o histórico</span></div>
+<div class="card" style="overflow:hidden">
   <table>
-    <thead>
-      <tr><th>Número</th><th>Nome</th><th>Status</th><th></th></tr>
-    </thead>
+    <thead><tr><th>Cliente</th><th>Número</th><th>Área</th><th>Status</th><th></th></tr></thead>
     <tbody>
       {% for s in sessoes %}
       <tr>
-        <td style="font-family:monospace;font-size:12px;color:var(--g900)">{{ s.numero.split('@')[0] }}</td>
-        <td>{{ s.nome or '—' }}</td>
+        <td class="nm">{{ s.nome or '—' }}</td>
+        <td class="mono">{{ s.mascara }}</td>
+        <td>—</td>
         <td>
-          {% if s.status == 'ativo' %}<span class="badge badge-green">ativo</span>
-          {% else %}<span class="badge badge-gray">{{ s.status }}</span>{% endif %}
+          {% if s.status == 'ativo' %}<span class="chip c-grn">Sofia atendendo</span>
+          {% else %}<span class="chip c-gray">pausada</span>{% endif %}
         </td>
-        <td style="text-align:right"><a href="/admin/sessoes/{{ s.numero }}" class="btn btn-ghost btn-sm">Abrir →</a></td>
+        <td style="text-align:right"><a class="btn" style="padding:5px 11px" href="/admin/sessoes/{{ s.numero }}">Abrir →</a></td>
       </tr>
       {% else %}
-      <tr><td colspan="4" style="text-align:center;color:var(--g400);padding:2.5rem;font-size:13px">Nenhuma sessão registrada ainda</td></tr>
+      <tr><td colspan="5"><div class="empty">Nenhuma conversa registrada ainda</div></td></tr>
       {% endfor %}
     </tbody>
   </table>

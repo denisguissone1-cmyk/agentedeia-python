@@ -20,6 +20,65 @@ _CAMPOS_INT = [
     "rate_limit_janela", "historico_max", "agent_timeout_seg",
 ]
 
+_CAMPOS_TOKENS = [
+    "uazapi_url", "uazapi_token", "openai_api_key",
+    "google_api_key", "supabase_url", "supabase_key",
+]
+
+# Ordem oficial das tools + ícone/cor (espelha o mock).
+_TOOLS_META = [
+    ("cadastrar",         "＋",  "var(--blue-soft)"),
+    ("buscar_info",       "🔍", "var(--vio-soft)"),
+    ("consultar_agenda",  "📅", "var(--amber-soft)"),
+    ("pre_marcacao",      "✓",  "var(--grn-soft)"),
+    ("desmarcar",         "✕",  "#F0F1F4"),
+]
+
+
+def _tools_view(cfg: dict) -> list[dict]:
+    """Monta a lista de tools (nome, ícone, cor, descrição, estado) para os templates."""
+    descr = cfg.get("tools_descricao", {})
+    ativas = cfg.get("tools_ativas", {})
+    out = []
+    for nome, icone, bg in _TOOLS_META:
+        out.append({
+            "nome": nome,
+            "icone": icone,
+            "bg": bg,
+            "descricao": descr.get(nome, ""),
+            "ativa": ativas.get(nome) is not False,
+        })
+    return out
+
+
+async def _eventos_recentes(n: int = 6) -> list[dict]:
+    """Lê eventos:recentes (lista Redis) de forma tolerante. Vazio se ausente/erro."""
+    import json
+    try:
+        raw = await redis_client.lrange("eventos:recentes", 0, n - 1)
+    except Exception:
+        return []
+    eventos = []
+    for item in raw or []:
+        try:
+            ev = json.loads(item)
+            if isinstance(ev, dict):
+                eventos.append(ev)
+        except Exception:
+            continue
+    return eventos
+
+
+# ── Raiz / auth ────────────────────────────────────────────────────────────────
+
+
+@router.get("", include_in_schema=False)
+@router.get("/", include_in_schema=False)
+async def raiz_admin(request: Request):
+    if logado(request):
+        return RedirectResponse("/admin/dashboard", status_code=302)
+    return RedirectResponse("/admin/login", status_code=302)
+
 
 @router.get("/login", response_class=HTMLResponse)
 async def login_form(request: Request, erro: str = ""):
@@ -30,7 +89,7 @@ async def login_form(request: Request, erro: str = ""):
 async def login_post(request: Request, usuario: str = Form(...), senha: str = Form(...)):
     if conferir(usuario, senha, usuario=PAINEL_USER, senha_hash=PAINEL_PASS_HASH):
         request.session["user"] = usuario
-        return RedirectResponse("/admin/config", status_code=302)
+        return RedirectResponse("/admin/dashboard", status_code=302)
     return templates.TemplateResponse(
         "login.html", {"request": request, "erro": "Usuário ou senha inválidos"},
         status_code=401,
@@ -43,13 +102,143 @@ async def logout(request: Request):
     return RedirectResponse("/admin/login", status_code=302)
 
 
-@router.get("/config", response_class=HTMLResponse)
-async def config_form(request: Request, salvo: str = ""):
+# ── Dashboard ───────────────────────────────────────────────────────────────────
+
+
+async def _contar_conversas() -> int:
+    def _q():
+        conn = get_db_conn()
+        try:
+            with conn.cursor() as cur:
+                cur.execute("SELECT count(*) AS n FROM cadastro")
+                row = cur.fetchone()
+                return int(row["n"]) if row else 0
+        finally:
+            conn.close()
+    try:
+        return await asyncio.to_thread(_q)
+    except Exception:
+        return 0
+
+
+async def _redis_int(chave: str) -> int:
+    try:
+        val = await redis_client.get(chave)
+        return int(val) if val is not None else 0
+    except Exception:
+        return 0
+
+
+@router.get("/dashboard", response_class=HTMLResponse)
+async def dashboard(request: Request):
+    if not logado(request):
+        return RedirectResponse("/admin/login", status_code=302)
+
+    cfg = await get_config()
+
+    conversas = await _contar_conversas()
+    msgs_hoje = await _redis_int("stats:msgs_hoje")
+    agendamentos = await _redis_int("stats:agendamentos_hoje")
+    try:
+        fila = await redis_client.llen("arq:queue:default")
+    except Exception:
+        fila = 0
+
+    stats = {
+        "conversas_ativas": conversas,
+        "msgs_hoje": msgs_hoje,
+        "fila_pendente": fila or 0,
+        "agendamentos": agendamentos,
+    }
+
+    return templates.TemplateResponse(
+        "dashboard.html",
+        {
+            "request": request, "ativo": "dashboard", "titulo": "Dashboard",
+            "stats": stats, "eventos": await _eventos_recentes(6),
+            "tools": _tools_view(cfg),
+        },
+    )
+
+
+# ── Tools ─────────────────────────────────────────────────────────────────────
+
+
+@router.get("/tools", response_class=HTMLResponse)
+async def tools_view(request: Request, salvo: str = ""):
+    if not logado(request):
+        return RedirectResponse("/admin/login", status_code=302)
+    cfg = await get_config()
+    return templates.TemplateResponse(
+        "tools.html",
+        {"request": request, "ativo": "tools", "titulo": "Tools",
+         "tools": _tools_view(cfg), "salvo": bool(salvo)},
+    )
+
+
+@router.post("/tools/{nome}/toggle")
+async def tools_toggle(request: Request, nome: str):
+    if not logado(request):
+        return RedirectResponse("/admin/login", status_code=302)
+    cfg = await get_config()
+    atual = cfg.get("tools_ativas", {}).get(nome) is not False
+    if any(n == nome for n, _, _ in _TOOLS_META):
+        await set_config({"tools_ativas": {nome: (not atual)}})
+    return RedirectResponse("/admin/tools?salvo=1", status_code=302)
+
+
+# ── Prompt ────────────────────────────────────────────────────────────────────
+
+
+@router.get("/prompt", response_class=HTMLResponse)
+async def prompt_form(request: Request, salvo: str = "", erro: str = ""):
     if not logado(request):
         return RedirectResponse("/admin/login", status_code=302)
     c = await get_config()
     return templates.TemplateResponse(
-        "config.html", {"request": request, "c": c, "salvo": bool(salvo), "erro": ""}
+        "prompt.html",
+        {"request": request, "ativo": "prompt", "titulo": "Prompt",
+         "c": c, "salvo": bool(salvo), "erro": erro},
+    )
+
+
+@router.post("/prompt", response_class=HTMLResponse)
+async def prompt_post(request: Request):
+    if not logado(request):
+        return RedirectResponse("/admin/login", status_code=302)
+    form = await request.form()
+    parcial = {}
+    if form.get("system_prompt") is not None:
+        parcial["system_prompt"] = form["system_prompt"]
+    td = {k[len("tool__"):]: v for k, v in form.items() if k.startswith("tool__")}
+    if td:
+        parcial["tools_descricao"] = td
+    try:
+        await set_config(parcial)
+    except ValueError as exc:
+        c = await get_config()
+        return templates.TemplateResponse(
+            "prompt.html",
+            {"request": request, "ativo": "prompt", "titulo": "Prompt",
+             "c": c, "salvo": False, "erro": str(exc)},
+            status_code=400,
+        )
+    return RedirectResponse("/admin/prompt?salvo=1", status_code=302)
+
+
+# ── Configurações (numéricos + tokens) ────────────────────────────────────────
+
+
+@router.get("/config", response_class=HTMLResponse)
+async def config_form(request: Request, salvo: str = "", erro: str = ""):
+    if not logado(request):
+        return RedirectResponse("/admin/login", status_code=302)
+    c = await get_config()
+    t = await get_tokens()
+    return templates.TemplateResponse(
+        "config.html",
+        {"request": request, "ativo": "config", "titulo": "Configurações",
+         "c": c, "t": t, "salvo": bool(salvo), "erro": erro},
     )
 
 
@@ -63,25 +252,58 @@ async def config_post(request: Request):
         for campo in _CAMPOS_INT:
             if form.get(campo) not in (None, ""):
                 parcial[campo] = int(form[campo])
-        if form.get("system_prompt") is not None:
-            parcial["system_prompt"] = form["system_prompt"]
-        td = {k[len("tool__"):]: v for k, v in form.items() if k.startswith("tool__")}
-        if td:
-            parcial["tools_descricao"] = td
         await set_config(parcial)
     except ValueError as exc:
         c = await get_config()
+        t = await get_tokens()
         return templates.TemplateResponse(
             "config.html",
-            {"request": request, "c": c, "salvo": False, "erro": str(exc)},
+            {"request": request, "ativo": "config", "titulo": "Configurações",
+             "c": c, "t": t, "salvo": False, "erro": str(exc)},
             status_code=400,
         )
     return RedirectResponse("/admin/config?salvo=1", status_code=302)
 
 
+@router.post("/tokens", response_class=HTMLResponse)
+async def tokens_post(request: Request):
+    if not logado(request):
+        return RedirectResponse("/admin/login", status_code=302)
+    form = await request.form()
+    parcial = {k: form.get(k, "") for k in _CAMPOS_TOKENS}
+    await set_tokens(parcial)
+    await refresh_clients()
+    return RedirectResponse("/admin/config?salvo=1", status_code=302)
+
+
+# ── Logs ──────────────────────────────────────────────────────────────────────
+
+
+@router.get("/logs", response_class=HTMLResponse)
+async def logs_view(request: Request):
+    if not logado(request):
+        return RedirectResponse("/admin/login", status_code=302)
+    return templates.TemplateResponse(
+        "logs.html",
+        {"request": request, "ativo": "logs", "titulo": "Logs ao vivo",
+         "eventos": await _eventos_recentes(20)},
+    )
+
+
+# ── Sessões / conversa ────────────────────────────────────────────────────────
+
+
 async def _status(numero: str) -> str:
     val = await redis_client.get(f"{numero}_block")
     return "pausado/bloqueado" if val == b"true" else "ativo"
+
+
+def _mascara(numero: str) -> str:
+    """Mascara o número (ex.: 5561999999942@c.us → 5561•••42)."""
+    base = numero.split("@")[0]
+    if len(base) <= 6:
+        return base
+    return f"{base[:4]}•••{base[-2:]}"
 
 
 @router.get("/sessoes", response_class=HTMLResponse)
@@ -104,10 +326,12 @@ async def sessoes(request: Request):
         numero = row["remoteJid"]
         sessoes_lista.append({
             "numero": numero, "nome": row.get("nomeusuario"),
-            "status": await _status(numero),
+            "mascara": _mascara(numero), "status": await _status(numero),
         })
     return templates.TemplateResponse(
-        "sessoes.html", {"request": request, "sessoes": sessoes_lista}
+        "sessoes.html",
+        {"request": request, "ativo": "sessoes", "titulo": "Sessões",
+         "sessoes": sessoes_lista},
     )
 
 
@@ -129,7 +353,9 @@ async def conversa(request: Request, numero: str):
         for m in msgs
     ]
     return templates.TemplateResponse(
-        "conversa.html", {"request": request, "numero": numero, "mensagens": mensagens}
+        "conversa.html",
+        {"request": request, "ativo": "sessoes", "titulo": "Conversa",
+         "numero": numero, "mensagens": mensagens},
     )
 
 
@@ -147,30 +373,3 @@ async def despausar(request: Request, numero: str):
         return RedirectResponse("/admin/login", status_code=302)
     await redis_client.delete(f"{numero}_block")
     return RedirectResponse(f"/admin/sessoes/{numero}", status_code=302)
-
-
-_CAMPOS_TOKENS = [
-    "uazapi_url", "uazapi_token", "openai_api_key",
-    "google_api_key", "supabase_url", "supabase_key",
-]
-
-
-@router.get("/tokens", response_class=HTMLResponse)
-async def tokens_form(request: Request, salvo: str = ""):
-    if not logado(request):
-        return RedirectResponse("/admin/login", status_code=302)
-    t = await get_tokens()
-    return templates.TemplateResponse(
-        "tokens.html", {"request": request, "t": t, "salvo": bool(salvo), "erro": ""}
-    )
-
-
-@router.post("/tokens", response_class=HTMLResponse)
-async def tokens_post(request: Request):
-    if not logado(request):
-        return RedirectResponse("/admin/login", status_code=302)
-    form = await request.form()
-    parcial = {k: form.get(k, "") for k in _CAMPOS_TOKENS}
-    await set_tokens(parcial)
-    await refresh_clients()
-    return RedirectResponse("/admin/tokens?salvo=1", status_code=302)

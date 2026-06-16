@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<div class="sec"><h2>Atividade ao vivo</h2><span style="font-size:12.5px;color:var(--faint)">Tudo que a Sofia faz, em tempo real e em português</span></div>
+<div class="logwrap">
+  <div class="logbar">
+    <span class="lv"><span class="dot"></span>Ao vivo</span>
+    <span class="fchip on" data-f="all">Tudo</span>
+    <span class="fchip" data-f="msg">Mensagens</span>
+    <span class="fchip" data-f="agenda">Agendamentos</span>
+    <span class="fchip" data-f="aviso">Avisos</span>
+  </div>
+  <div class="feed" id="feed-full">
+    {% for ev in eventos %}
+    <div class="ev {{ ev.cor|default('e-blue') }}" data-f="{{ ev.filtro|default('msg') }}"><div class="ei">{{ ev.icone|default('💬') }}</div><div class="etxt"><div class="em">{{ ev.texto }}</div><div class="et">{{ ev.quando|default('') }}</div></div></div>
+    {% else %}
+    <div class="empty">Nenhuma atividade recente ainda</div>
+    {% endfor %}
+    <!-- batch seguinte: conectar EventSource('/admin/logs/stream') aqui -->
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ---- filtros do feed (cliente) ----
+let curFilter='all';
+function applyFilter(){
+  document.querySelectorAll('#feed-full .ev').forEach(ev=>{
+    ev.style.display=(curFilter==='all'||ev.dataset.f===curFilter)?'':'none';
+  });
+}
+document.querySelectorAll('.fchip').forEach(c=>c.addEventListener('click',()=>{
+  document.querySelectorAll('.fchip').forEach(x=>x.classList.remove('on'));
+  c.classList.add('on');curFilter=c.dataset.f;applyFilter();
+}));
+</script>
+{% endblock %}

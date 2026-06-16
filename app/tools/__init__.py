@@ -10,8 +10,16 @@ async def montar_tools(number: str) -> list:
     from app.tools import buscar_info, cadastrar, consultar_agenda, desmarcar, pre_marcacao
     from app.config import get_config
 
-    descricoes = (await get_config())["tools_descricao"]
-    tools = [cadastrar.criar(number, descricoes["cadastrar"])]
+    cfg = await get_config()
+    descricoes = cfg["tools_descricao"]
+    ativas = cfg.get("tools_ativas", {})
+
+    def _ligada(nome: str) -> bool:
+        return ativas.get(nome) is not False  # ausente/True → ligada
+
+    tools = []
+    if _ligada("cadastrar"):
+        tools.append(cadastrar.criar(number, descricoes["cadastrar"]))
     _sem_numero = {
         "buscar_info": buscar_info,
         "consultar_agenda": consultar_agenda,
@@ -19,5 +27,6 @@ async def montar_tools(number: str) -> list:
         "desmarcar": desmarcar,
     }
     for nome, modulo in _sem_numero.items():
-        tools.append(modulo.criar(descricoes[nome]))
+        if _ligada(nome):
+            tools.append(modulo.criar(descricoes[nome]))
     return tools

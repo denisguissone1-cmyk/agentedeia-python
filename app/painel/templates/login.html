@@ -1,8 +1,36 @@
-{% extends "base.html" %}
-{% block conteudo %}
-<div style="max-width:360px;margin:4rem auto">
-  <h1 style="text-align:center;margin-bottom:.25rem">Elizabeth</h1>
-  <p style="text-align:center;color:var(--g400);font-size:13px;margin-bottom:2rem">Painel de administração</p>
+<!doctype html>
+<html lang="pt-br" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Entrar · Sofia</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --canvas:#F8F9FB;--panel:#FFFFFF;--ink:#0E1014;--mut:#5C6470;--faint:#969CA8;
+  --line:#EBECF0;--line2:#F2F3F6;--acc:#4F46E5;--acc-soft:#EEF0FE;
+  --red:#E5484D;--red-soft:#FCEDED;--r:12px;--sh:0 1px 2px rgba(14,16,20,.04),0 10px 30px rgba(14,16,20,.06);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;background:var(--canvas);color:var(--ink);letter-spacing:-.012em;min-height:100vh;display:grid;place-items:center;padding:24px}
+.loginbox{width:100%;max-width:360px}
+.brand{display:flex;flex-direction:column;align-items:center;gap:12px;margin-bottom:22px}
+.brand .logo{width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,#4F46E5,#7C7AF0);display:grid;place-items:center;color:#fff;font-weight:700;font-size:20px;box-shadow:0 6px 18px rgba(79,70,229,.32)}
+.brand b{font-size:16px;font-weight:600;letter-spacing:-.03em}
+.brand span{font-size:12.5px;color:var(--faint)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--sh);padding:24px}
+.card label{font-size:12px;font-weight:600;color:var(--mut);display:block;margin:14px 0 6px}
+.card label:first-child{margin-top:0}
+.card input{width:100%;font:inherit;font-size:13px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;color:var(--ink)}
+.card input:focus{outline:none;border-color:var(--acc);box-shadow:0 0 0 3px var(--acc-soft)}
+.btn-pri{width:100%;margin-top:18px;padding:10px 14px;border:0;border-radius:8px;background:var(--acc);color:#fff;font:inherit;font-size:13px;font-weight:600;cursor:pointer}
+.btn-pri:hover{background:#4338CA}
+.err{background:var(--red-soft);color:var(--red);padding:10px 14px;border-radius:8px;font-size:12.5px;font-weight:600;margin-bottom:14px}
+</style>
+</head>
+<body>
+<div class="loginbox">
+  <div class="brand"><div class="logo">L</div><b>Leal &amp; Associados</b><span>Painel da Sofia</span></div>
   {% if erro %}<p class="err">{{ erro }}</p>{% endif %}
   <div class="card">
     <form method="post" action="/admin/login">
@@ -10,10 +38,9 @@
       <input name="usuario" autofocus autocomplete="username">
       <label>Senha</label>
       <input name="senha" type="password" autocomplete="current-password">
-      <div class="actions" style="margin-top:1rem">
-        <button type="submit" style="width:100%;justify-content:center">Entrar</button>
-      </div>
+      <button type="submit" class="btn-pri">Entrar</button>
     </form>
   </div>
 </div>
-{% endblock %}
+</body>
+</html>

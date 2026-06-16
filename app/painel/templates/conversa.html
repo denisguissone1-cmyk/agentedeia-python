@@ -1,25 +1,25 @@
 {% extends "base.html" %}
 {% block conteudo %}
-<div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem;flex-wrap:wrap">
-  <a href="/admin/sessoes" style="font-size:13px;color:var(--g400)">← Sessões</a>
-  <h1 style="margin:0;font-family:monospace;font-size:18px;flex:1">{{ numero.split('@')[0] }}</h1>
-  <div style="display:flex;gap:.5rem">
+<div style="display:flex;align-items:center;gap:14px;margin:4px 2px 16px;flex-wrap:wrap">
+  <a class="btn" href="/admin/sessoes" style="padding:6px 12px">← Sessões</a>
+  <h2 style="font-family:'JetBrains Mono',monospace;font-size:15px;margin:0;flex:1">{{ numero.split('@')[0] }}</h2>
+  <div style="display:flex;gap:8px">
     <form method="post" action="/admin/sessoes/{{ numero }}/pausar" style="margin:0">
-      <button type="submit" class="btn-ghost btn btn-sm">Pausar bot</button>
+      <button type="submit" class="btn">Pausar bot</button>
     </form>
     <form method="post" action="/admin/sessoes/{{ numero }}/despausar" style="margin:0">
-      <button type="submit" class="btn-sm">Despausar</button>
+      <button type="submit" class="btn btn-pri">Despausar</button>
     </form>
   </div>
 </div>
-<div class="card" style="padding:0;overflow:hidden">
+<div class="card" style="overflow:hidden">
   {% for m in mensagens %}
-  <div style="padding:.7rem 1.25rem;border-bottom:1px solid var(--g100);display:flex;gap:1rem;animation:fadeIn .12s ease">
-    <span style="font-size:11px;font-weight:600;min-width:72px;padding-top:.15rem;color:{% if m.role == 'Elizabeth' %}var(--blue){% else %}var(--g400){% endif %}">{{ m.role }}</span>
-    <span style="font-size:13px;color:var(--g700);white-space:pre-wrap;word-break:break-word">{{ m.texto }}</span>
+  <div style="display:flex;gap:14px;padding:13px 18px;border-bottom:1px solid var(--line2)">
+    <span style="font-size:11.5px;font-weight:600;min-width:78px;padding-top:1px;color:{% if m.role == 'Elizabeth' %}var(--acc){% else %}var(--faint){% endif %}">{{ m.role }}</span>
+    <span style="font-size:13px;color:var(--mut);white-space:pre-wrap;word-break:break-word;line-height:1.55">{{ m.texto }}</span>
   </div>
   {% else %}
-  <div style="padding:2.5rem;text-align:center;color:var(--g400);font-size:13px">Nenhuma mensagem ainda</div>
+  <div class="empty">Nenhuma mensagem ainda</div>
   {% endfor %}
 </div>
 {% endblock %}

@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mock D · Compact Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#FBFBFC;--panel:#fff;--ink:#16181D;--mut:#6E727C;--faint:#9CA0AB;--line:#EAEBEF;--ind:#5E6AD2;--ind-soft:#EEEFFB;--grn:#3FA66A;--amber:#D98E2B;--r:7px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',sans-serif;font-size:13px;background:var(--bg);color:var(--ink);letter-spacing:-.011em;display:grid;grid-template-columns:204px 1fr;min-height:100vh}
+aside{background:var(--panel);border-right:1px solid var(--line);display:flex;flex-direction:column;padding:12px 9px;position:sticky;top:0;height:100vh}
+.brand{display:flex;align-items:center;gap:8px;padding:5px 7px 14px}
+.brand .logo{width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,#5E6AD2,#818CF8);display:grid;place-items:center;color:#fff;font-weight:700;font-size:13px}
+.brand b{font-size:12.5px;font-weight:600;letter-spacing:-.02em}
+.brand span{display:block;font-size:10.5px;color:var(--faint);font-weight:500}
+.nav-lbl{font-size:9.5px;font-weight:600;text-transform:uppercase;letter-spacing:.09em;color:var(--faint);padding:12px 7px 5px}
+nav{display:flex;flex-direction:column;gap:1px}
+nav a{display:flex;align-items:center;gap:9px;padding:6px 8px;border-radius:6px;font-size:12.5px;font-weight:500;color:var(--mut);text-decoration:none;transition:.1s}
+nav a svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.9}
+nav a:hover{background:var(--bg);color:var(--ink)}
+nav a.on{background:var(--ind-soft);color:var(--ind);font-weight:600}
+nav a .kbd{margin-left:auto;font-family:'JetBrains Mono';font-size:9.5px;color:var(--faint)}
+.spacer{flex:1}
+.gear{border-top:1px solid var(--line);margin-top:6px;padding-top:6px}
+main{padding:16px 22px 36px;max-width:1180px}
+.top{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.top h1{font-size:16px;font-weight:600;letter-spacing:-.02em}
+.top h1 small{color:var(--faint);font-weight:400;font-size:12px;margin-left:8px}
+.pill{display:inline-flex;align-items:center;gap:6px;background:#fff;border:1px solid var(--line);color:var(--grn);font-size:11.5px;font-weight:600;padding:5px 10px;border-radius:6px}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--grn);box-shadow:0 0 0 2.5px rgba(63,166,106,.18)}
+.toggle{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;color:var(--mut);margin-left:12px}
+.sw{width:30px;height:17px;border-radius:999px;background:var(--ind);position:relative}
+.sw::after{content:"";position:absolute;top:2px;right:2px;width:13px;height:13px;border-radius:50%;background:#fff}
+.stats{display:grid;grid-template-columns:repeat(6,1fr);gap:9px;margin-bottom:18px}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:10px 11px}
+.stat .k{font-size:10.5px;color:var(--mut);font-weight:500}
+.stat .v{font-size:20px;font-weight:700;letter-spacing:-.03em;margin-top:3px;font-family:'JetBrains Mono',monospace}
+.stat .v small{font-size:10px;color:var(--grn);font-weight:500;margin-left:3px}
+.stat.fila .v{color:var(--amber)}
+.sec{display:flex;align-items:center;justify-content:space-between;margin:2px 1px 8px}
+.sec h2{font-size:12px;font-weight:600;color:var(--mut);text-transform:uppercase;letter-spacing:.05em}
+.sec a{font-size:11px;color:var(--ind);text-decoration:none;font-weight:600}
+.grid2{display:grid;grid-template-columns:1.6fr 1fr;gap:14px}
+.tools{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+.tool{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:10px 11px;transition:.1s}
+.tool:hover{border-color:#C9CCD6}
+.tool .h{display:flex;align-items:center;justify-content:space-between;margin-bottom:5px}
+.tool .nm{font-size:11.5px;font-weight:600;font-family:'JetBrains Mono',monospace;color:var(--ind)}
+.tool p{font-size:10.5px;color:var(--mut);line-height:1.45}
+.miniSw{width:26px;height:15px;border-radius:999px;background:var(--grn);position:relative;flex:none}
+.miniSw::after{content:"";position:absolute;top:2px;right:2px;width:11px;height:11px;border-radius:50%;background:#fff}
+.miniSw.off{background:#D2D5DE}.miniSw.off::after{right:auto;left:2px}
+.acc{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);overflow:hidden;margin-top:6px}
+.acc .row{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;cursor:pointer;font-size:12px;font-weight:600}
+.acc .row .chev{color:var(--faint)}
+.acc .row.open .chev{transform:rotate(90deg)}
+.acc .body{border-top:1px solid var(--line);padding:10px 12px;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--mut);line-height:1.6;white-space:pre-wrap;max-height:150px;overflow:auto;background:#FCFCFD}
+.acc .row+.row{border-top:1px solid var(--line)}
+.logs{background:#14161B;border-radius:var(--r);padding:10px 11px;font-family:'JetBrains Mono',monospace;font-size:10.5px;line-height:1.7;color:#828896;height:300px;overflow:auto}
+.logs .t{color:#474C58}.logs .i{color:#818CF8}.logs .ok{color:#52C98A}.logs .w{color:var(--amber)}
+.logs .hd{display:flex;align-items:center;justify-content:space-between;color:#C2C6D0;font-family:'Inter';font-size:10.5px;font-weight:600;margin-bottom:7px;padding-bottom:6px;border-bottom:1px solid #232730}
+.live{display:inline-flex;align-items:center;gap:5px;color:#52C98A;font-size:9.5px}
+.live .dot{background:#52C98A}
+</style>
+</head>
+<body>
+<aside>
+  <div class="brand"><div class="logo">L</div><div><b>Leal &amp; Associados</b><span>Sofia</span></div></div>
+  <div class="nav-lbl">Menu</div>
+  <nav>
+    <a class="on" href="#"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Dashboard<span class="kbd">G D</span></a>
+    <a href="#"><svg viewBox="0 0 24 24"><path d="M14 7l-1.5-1.5a3 3 0 00-4 0L7 7m0 0l-3 3a3 3 0 000 4l4 4a3 3 0 004 0l3-3"/></svg>Tools<span class="kbd">G T</span></a>
+    <a href="#"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Prompt<span class="kbd">G P</span></a>
+    <a href="#"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>Sessões<span class="kbd">G S</span></a>
+    <a href="#"><svg viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16"/></svg>Logs<span class="kbd">G L</span></a>
+  </nav>
+  <div class="spacer"></div>
+  <div class="gear"><nav>
+    <a href="#"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.6 1.6 0 00-2.7.7 1.6 1.6 0 01-3.2 0 1.6 1.6 0 00-2.7-.7l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.6 1.6 0 00-1.5-2.7 1.6 1.6 0 010-3.2 1.6 1.6 0 001.5-2.7l-.1-.1a2 2 0 112.8-2.8l.1.1a1.6 1.6 0 002.7-.7 1.6 1.6 0 013.2 0 1.6 1.6 0 002.7.7l.1-.1a2 2 0 112.8 2.8l-.1.1a1.6 1.6 0 00.7 2.7z"/></svg>Configurações</a>
+  </nav></div>
+</aside>
+<main>
+  <div class="top">
+    <h1>Dashboard<small>tempo real</small></h1>
+    <div style="display:flex;align-items:center">
+      <span class="pill"><span class="dot"></span>Sofia online</span>
+      <span class="toggle"><span class="sw"></span>Bot ativo</span>
+    </div>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="k">Sessões</div><div class="v">18</div></div>
+    <div class="stat"><div class="k">Msgs hoje</div><div class="v">342<small>↑12</small></div></div>
+    <div class="stat fila"><div class="k">Fila</div><div class="v">3</div></div>
+    <div class="stat"><div class="k">Workers</div><div class="v">4/4</div></div>
+    <div class="stat"><div class="k">Agend.</div><div class="v">7</div></div>
+    <div class="stat"><div class="k">P95 resp</div><div class="v">2.1s</div></div>
+  </div>
+  <div class="grid2">
+    <div>
+      <div class="sec"><h2>Tools</h2><a href="#">Gerenciar →</a></div>
+      <div class="tools">
+        <div class="tool"><div class="h"><span class="nm">cadastrar</span><span class="miniSw"></span></div><p>Salva nome no banco.</p></div>
+        <div class="tool"><div class="h"><span class="nm">buscar_info</span><span class="miniSw"></span></div><p>RAG: valores e áreas.</p></div>
+        <div class="tool"><div class="h"><span class="nm">consultar_ag.</span><span class="miniSw"></span></div><p>Horários livres.</p></div>
+        <div class="tool"><div class="h"><span class="nm">pre_marcacao</span><span class="miniSw"></span></div><p>Agenda consulta.</p></div>
+        <div class="tool"><div class="h"><span class="nm">desmarcar</span><span class="miniSw off"></span></div><p>Cancela por id.</p></div>
+      </div>
+      <div class="sec" style="margin-top:18px"><h2>Prompt</h2><a href="#">Editar →</a></div>
+      <div class="acc">
+        <div class="row open"><span>System Prompt · Sofia</span><span class="chev">›</span></div>
+        <div class="body"># ROLE
+Você é Sofia, atendente do escritório Leal &amp; Associados Advocacia.
+# TASK: Triagem Jurídica
+1. Acolhimento + nome  2. Área  3. Qualificação
+4. Documentos  5. Valor/modalidade via buscar_info
+6. Agendamento  7. Confirmação</div>
+        <div class="row"><span>Descrição das tools</span><span class="chev">›</span></div>
+        <div class="row"><span>Comportamento &amp; limites</span><span class="chev">›</span></div>
+      </div>
+    </div>
+    <div>
+      <div class="sec"><h2>Logs</h2><a href="#">Tela cheia →</a></div>
+      <div class="logs">
+        <div class="hd"><span>tail webhook</span><span class="live"><span class="dot"></span>live</span></div>
+        <div><span class="t">12:04:11</span> <span class="i">[a3f1]</span> recv tipo=text</div>
+        <div><span class="t">12:04:11</span> <span class="ok">[a3f1]</span> buffer flush 1</div>
+        <div><span class="t">12:04:13</span> <span class="i">[a3f1]</span> enqueue #9281 fila=1</div>
+        <div><span class="t">12:04:13</span> <span class="i">[a3f1]</span> w#2 → agente 88c</div>
+        <div><span class="t">12:04:15</span> <span class="ok">[a3f1]</span> ✓ enviada</div>
+        <div><span class="t">12:05:02</span> <span class="i">[b7c2]</span> audio→whisper</div>
+        <div><span class="t">12:05:04</span> <span class="w">[b7c2]</span> rate-limit aviso</div>
+        <div><span class="t">12:05:30</span> <span class="i">[c9d0]</span> pre_marcacao URGENTE</div>
+        <div><span class="t">12:05:31</span> <span class="ok">[c9d0]</span> ✓ agendada</div>
+        <div><span class="t">12:06:10</span> <span class="i">[d2e4]</span> w#1 pick fila=2</div>
+        <div><span class="t">12:06:12</span> <span class="ok">[d2e4]</span> ✓ enviada</div>
+        <div><span class="t">12:06:48</span> <span class="i">[e5f7]</span> recv tipo=image</div>
+        <div><span class="t">12:06:50</span> <span class="i">[e5f7]</span> gpt-4o vision</div>
+      </div>
+    </div>
+  </div>
+</main>
+</body>
+</html>

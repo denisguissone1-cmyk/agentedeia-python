@@ -24,3 +24,9 @@ def test_app_monta_e_expoe_rotas():
     # Rotas do painel (incluídas via APIRouter com prefix="/admin")
     # url_path_for confirma que a rota está registrada no roteador da aplicação
     assert str(app.url_path_for("login_form")) == "/admin/login"
+    assert str(app.url_path_for("dashboard")) == "/admin/dashboard"
+    assert str(app.url_path_for("tools_view")) == "/admin/tools"
+    assert str(app.url_path_for("prompt_form")) == "/admin/prompt"
+    assert str(app.url_path_for("sessoes")) == "/admin/sessoes"
+    assert str(app.url_path_for("logs_view")) == "/admin/logs"
+    assert str(app.url_path_for("config_form")) == "/admin/config"
