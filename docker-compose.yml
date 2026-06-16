@@ -6,14 +6,27 @@ services:
     env_file: .env
     environment:
       REDIS_URL: redis://redis:6379
+      POSTGRES_CONN: postgresql://elizabeth:elizabeth@postgres:5432/elizabeth
     depends_on:
       - redis
+      - postgres
     restart: unless-stopped
 
   redis:
     image: redis:7-alpine
     volumes:
       - redis-data:/data
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_USER: elizabeth
+      POSTGRES_PASSWORD: elizabeth
+      POSTGRES_DB: elizabeth
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./docker/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     restart: unless-stopped
 
   # HTTPS opcional (descomente e ajuste o domínio):
@@ -26,3 +39,4 @@ services:
 
 volumes:
   redis-data:
+  postgres-data:
