@@ -12,17 +12,13 @@ from app import clientes
 from app.agente import chamar_agente
 from app.bloqueios import ja_processada, verifica_rate_limit, verificar_bloqueios_rapido
 from app.buffer import buffer_mensagens
-from app.clientes import UAZAPI_TOKEN, UAZAPI_URL, supabase_client
+from app.clientes import get_db_conn
+from app.config import get_tokens
 from app.memoria import inserir_na_memoria
 from app.midia import processar_mensagem_por_tipo
 
 logger = logging.getLogger(__name__)
 WEBHOOK_TOKEN = os.getenv("WEBHOOK_TOKEN", "")
-
-
-async def supabase_async(operacao):
-    """Roda operação síncrona do Supabase em thread separada (não trava o loop)."""
-    return await asyncio.to_thread(operacao)
 
 
 def calcular_typing_ms(texto: str) -> int:
@@ -51,15 +47,26 @@ def extrair_variaveis(body: dict) -> dict:
 
 
 async def verificar_ou_criar_cadastro(number: str) -> dict:
-    """Garante que o contato existe no Supabase (upsert = cria se não existir)."""
+    """Garante que o contato existe no Postgres interno (upsert)."""
     def _executar():
-        return (
-            supabase_client.table("cadastro")
-            .upsert({"remoteJid": number}, on_conflict="remoteJid")
-            .execute()
-        )
-    resultado = await supabase_async(_executar)
-    return resultado.data[0] if resultado.data else {}
+        conn = get_db_conn()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    'INSERT INTO cadastro ("remoteJid") VALUES (%s) '
+                    'ON CONFLICT ("remoteJid") DO NOTHING',
+                    (number,)
+                )
+                cur.execute(
+                    'SELECT "remoteJid", nomeusuario FROM cadastro WHERE "remoteJid" = %s',
+                    (number,)
+                )
+                row = cur.fetchone()
+            conn.commit()
+            return dict(row) if row else {}
+        finally:
+            conn.close()
+    return await asyncio.to_thread(_executar)
 
 
 class ErroCliente(Exception):
@@ -75,9 +82,10 @@ class ErroCliente(Exception):
 async def _enviar_texto_raw(
     number: str, texto: str, delay_ms: int, marcar_lido: bool
 ) -> None:
+    tokens = await get_tokens()
     resp = await clientes.http_client.post(
-        f"{UAZAPI_URL}/send/text",
-        headers={"token": UAZAPI_TOKEN, "Accept": "application/json"},
+        f"{tokens['uazapi_url']}/send/text",
+        headers={"token": tokens["uazapi_token"], "Accept": "application/json"},
         json={
             "number":       number,
             "text":         texto,
@@ -100,9 +108,10 @@ async def enviar_aviso_rate_limit(number: str) -> None:
 
 async def enviar_typing(number: str, duracao_ms: int) -> None:
     try:
+        tokens = await get_tokens()
         await clientes.http_client.post(
-            f"{UAZAPI_URL}/message/sendPresence",
-            headers={"token": UAZAPI_TOKEN, "Accept": "application/json"},
+            f"{tokens['uazapi_url']}/message/sendPresence",
+            headers={"token": tokens["uazapi_token"], "Accept": "application/json"},
             json={"number": number, "presence": "composing", "delay": duracao_ms},
         )
     except Exception:
