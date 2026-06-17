@@ -9,6 +9,7 @@ from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponen
 
 from app import clientes, eventos
 from app.agente import chamar_agente
+from app.execucoes import Execucao
 from app.bloqueios import ja_processada, verifica_rate_limit, verificar_bloqueios_rapido
 from app.buffer import buffer_mensagens
 from app.clientes import get_db_conn
@@ -154,6 +155,7 @@ async def validar_token_webhook(body: dict) -> None:
 async def processar_em_background(body: dict) -> None:
     req_id = nova_requisicao_id()
     number = "?"
+    exe = None
 
     try:
         dados  = extrair_variaveis(body)
@@ -162,42 +164,58 @@ async def processar_em_background(body: dict) -> None:
         if not number:
             return
 
+        exe = Execucao(req_id, number)
+        exe.passo("Mensagem recebida", f"tipo={dados['messagetype']}")
         logger.info(f"[{req_id}] [{number}] Mensagem recebida tipo={dados['messagetype']}")
 
         if await ja_processada(number, dados["id_msg"]):
+            exe.passo("Duplicata ignorada", "mesma mensagem já processada")
+            exe.encerrar("ignorada")
             logger.info(f"[{req_id}] [{number}] Duplicata ignorada")
             return
 
         rate = await verifica_rate_limit(number)
         if rate == "aviso":
+            exe.passo("Rate limit", "muitas mensagens — avisando o usuário")
+            exe.encerrar("ignorada")
             logger.warning(f"[{req_id}] [{number}] Rate limit — avisando usuário")
             await enviar_aviso_rate_limit(number)
             await eventos.aviso_rate(dados["nome"], number)
             return
         elif rate == "bloqueado":
+            exe.passo("Rate limit", "excedido — ignorando silenciosamente")
+            exe.encerrar("ignorada")
             logger.warning(f"[{req_id}] [{number}] Rate limit — ignorando silenciosamente")
             return
 
         status = await verificar_bloqueios_rapido(dados)
 
         if status == "bloquear_humano_bot":
+            exe.passo("Atendente humano assumiu", "bot pausado nesta conversa")
+            exe.encerrar("ignorada")
             await inserir_na_memoria(number, dados["txtmessage"], role="ai")
             logger.info(f"[{req_id}] [{number}] Atendente humano assumiu — bot silenciado")
             await eventos.humano_assumiu(dados["nome"], number)
             return
 
         if status == "bloquear_wpp":
+            exe.passo("Mensagem ignorada", "grupo ou enviada pelo próprio número")
+            exe.encerrar("ignorada")
             return
 
         texto_mensagem = await processar_mensagem_por_tipo(dados)
+        exe.passo("Conteúdo processado", f"{len(texto_mensagem)} chars ({dados['messagetype']})")
         await eventos.recebida(dados["nome"], number, dados["messagetype"])
 
         if status == "bloquear_individual":
+            exe.passo("Salvo em silêncio", "bloqueio individual ativo")
+            exe.encerrar("ignorada")
             await inserir_na_memoria(number, texto_mensagem, role="human")
             logger.info(f"[{req_id}] [{number}] Mensagem salva em silêncio (bloqueio individual)")
             return
 
         cadastro = await verificar_ou_criar_cadastro(number)
+        exe.passo("Cadastro verificado", cadastro.get("nomeusuario") or "novo contato")
 
         mensagem_para_buffer = json.dumps({
             "txtmessage": texto_mensagem,
@@ -207,29 +225,44 @@ async def processar_em_background(body: dict) -> None:
 
         mensagens = await buffer_mensagens(number, mensagem_para_buffer)
         if mensagens is None:
+            exe.passo("Aguardando agrupar (buffer)", "esperando se chegam mais mensagens")
+            exe.encerrar("aguardando")
             return
 
         textos         = [json.loads(m)["txtmessage"] for m in mensagens if m]
         texto_completo = "\n".join(t for t in textos if t.strip())
 
         if not texto_completo.strip():
+            exe.passo("Sem texto para enviar", "nada a processar após o buffer")
+            exe.encerrar("ignorada")
             return
 
+        exe.passo("Enviando ao agente", f"{len(texto_completo)} chars")
         logger.info(f"[{req_id}] [{number}] Enviando ao agente ({len(texto_completo)} chars)")
         try:
             texto_resposta = await chamar_agente(number, texto_completo, cadastro)
         except asyncio.TimeoutError:
+            exe.erro("Agente", "timeout — excedeu o tempo limite")
             logger.error(f"[{req_id}] [{number}] Timeout no agente")
             await enviar_fallback(number)
             return
         except Exception as exc:
+            exe.erro("Agente", f"{type(exc).__name__}: {exc}")
             logger.error(f"[{req_id}] [{number}] Falha no agente: {exc}", exc_info=True)
             await enviar_fallback(number)
             return
 
+        exe.passo("Resposta do agente", f"{len(texto_resposta)} chars")
         await enviar_resposta(number, texto_resposta)
+        exe.passo("Resposta enviada ao WhatsApp")
+        exe.encerrar("sucesso")
         logger.info(f"[{req_id}] [{number}] ✓ Resposta enviada ({len(texto_resposta)} chars)")
         await eventos.respondida(dados["nome"], number)
 
     except Exception as exc:
+        if exe is not None:
+            exe.erro("Erro inesperado", f"{type(exc).__name__}: {exc}")
         logger.error(f"[{req_id}] [{number}] Erro inesperado: {exc}", exc_info=True)
+    finally:
+        if exe is not None:
+            await exe.salvar()

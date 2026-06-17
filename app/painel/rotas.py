@@ -346,6 +346,27 @@ async def logs_view(request: Request):
     )
 
 
+@router.get("/execucoes", response_class=HTMLResponse)
+async def execucoes_view(request: Request):
+    if not logado(request):
+        return RedirectResponse("/admin/login", status_code=302)
+    from app.execucoes import listar
+    return templates.TemplateResponse(
+        "execucoes.html",
+        {"request": request, "ativo": "execucoes", "titulo": "Execuções",
+         "execucoes": await listar(40)},
+    )
+
+
+@router.get("/execucoes/dados")
+async def execucoes_dados(request: Request):
+    if not logado(request):
+        return Response(status_code=401)
+    from app.execucoes import listar
+    from fastapi.responses import JSONResponse
+    return JSONResponse(await listar(40))
+
+
 @router.get("/logs/stream")
 async def logs_stream(request: Request):
     """SSE: transmite ao vivo cada evento publicado no canal eventos:stream."""

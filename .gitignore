@@ -10,3 +10,6 @@ build/
 *.egg-info/
 .mypy_cache/
 htmlcov/
+
+# segredo local — nunca commitar
+pat.txt
