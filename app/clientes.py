@@ -32,6 +32,9 @@ load_dotenv()
 POSTGRES_CONN         = os.getenv("POSTGRES_CONN")
 GOOGLE_CALENDAR_ID    = os.getenv("GOOGLE_CALENDAR_ID")
 GOOGLE_CALENDAR_CREDS = os.getenv("GOOGLE_CALENDAR_CREDS")
+# Modelo Gemini — alias -latest aponta sempre pro flash estável atual (versões fixas
+# como gemini-1.5/2.0-flash vão sendo descontinuadas). Trocável por env GEMINI_MODEL.
+MODELO_GEMINI         = os.getenv("GEMINI_MODEL", "gemini-flash-latest")
 
 # Clientes de IA — None até o lifespan/refresh_clients() inicializá-los
 http_client:   Optional[httpx.AsyncClient]          = None
@@ -106,12 +109,12 @@ async def refresh_clients() -> None:
     ggl_key = tokens.get("google_api_key")
     if ggl_key:
         llm = ChatGoogleGenerativeAI(
-            model="gemini-1.5-flash",
+            model=MODELO_GEMINI,
             google_api_key=ggl_key,
             temperature=0.3,
         )
         genai.configure(api_key=ggl_key)
-        _genai_model = genai.GenerativeModel("gemini-1.5-flash")
+        _genai_model = genai.GenerativeModel(MODELO_GEMINI)
 
 
 @asynccontextmanager
