@@ -23,7 +23,53 @@ _CAMPOS_INT = [
 _CAMPOS_TOKENS = [
     "uazapi_url", "uazapi_token", "openai_api_key",
     "google_api_key", "supabase_url", "supabase_key",
+    "gemini_model", "gemini_model_fallback",
 ]
+
+# Fallback caso a API do Google não responda (lista viva vem de /admin/modelos).
+_MODELOS_FALLBACK = [
+    "gemini-flash-latest", "gemini-flash-lite-latest",
+    "gemini-2.5-flash", "gemini-2.5-flash-lite",
+    "gemini-2.0-flash", "gemini-2.0-flash-lite",
+    "gemini-3-flash-preview", "gemini-3.5-flash", "gemini-2.5-pro",
+]
+
+
+async def _listar_modelos_gemini() -> list[str]:
+    """Lista os modelos Gemini da chave salva (generateContent). Fallback se falhar."""
+    import httpx
+    tokens = await get_tokens()
+    key = (tokens.get("google_api_key") or "").strip()
+    if not key:
+        return _MODELOS_FALLBACK
+    try:
+        async with httpx.AsyncClient(timeout=12.0) as cli:
+            r = await cli.get(
+                "https://generativelanguage.googleapis.com/v1beta/models",
+                params={"key": key, "pageSize": 200},
+            )
+        r.raise_for_status()
+        nomes = []
+        for m in r.json().get("models", []):
+            if "generateContent" not in (m.get("supportedGenerationMethods") or []):
+                continue
+            nome = (m.get("name") or "").replace("models/", "")
+            if not nome.startswith("gemini"):
+                continue
+            if any(x in nome for x in ("image", "tts", "embedding", "aqa", "vision")):
+                continue
+            nomes.append(nome)
+        return nomes or _MODELOS_FALLBACK
+    except Exception:
+        return _MODELOS_FALLBACK
+
+
+@router.get("/modelos")
+async def modelos(request: Request):
+    if not logado(request):
+        return Response(status_code=401)
+    from fastapi.responses import JSONResponse
+    return JSONResponse(await _listar_modelos_gemini())
 
 # Ordem oficial das tools + ícone/cor (espelha o mock).
 _TOOLS_META = [

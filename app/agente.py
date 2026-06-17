@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from datetime import datetime
 
 import pytz
@@ -9,6 +10,8 @@ from app import clientes
 from app.config import get_config
 from app.memoria import carregar_historico, salvar_par_conversa
 from app.tools import montar_tools
+
+logger = logging.getLogger(__name__)
 
 
 async def chamar_agente(number: str, texto_completo: str, cadastro: dict) -> str:
@@ -23,22 +26,36 @@ async def chamar_agente(number: str, texto_completo: str, cadastro: dict) -> str
         MessagesPlaceholder(variable_name="agent_scratchpad"),
     ])
 
-    agente   = create_tool_calling_agent(clientes.llm, tools, prompt)
-    executor = AgentExecutor(agent=agente, tools=tools, verbose=False)
-
     agora = datetime.now(pytz.timezone("America/Sao_Paulo"))
-    resposta = await asyncio.wait_for(
-        executor.ainvoke({
-            "mensagem": texto_completo,
-            "historico": mensagens_historico,
-            "status_paciente": "Cliente conhecido" if cadastro.get("nomeusuario") else "Primeiro Contato",
-            "nome_paciente": cadastro.get("nomeusuario") or "Ainda não foi fornecido",
-            "data_hora": agora.strftime("%H:%M - %A - %d/%m/%Y"),
-            "numero": number.split("@")[0],
-        }),
-        timeout=cfg["agent_timeout_seg"],
-    )
+    payload = {
+        "mensagem": texto_completo,
+        "historico": mensagens_historico,
+        "status_paciente": "Cliente conhecido" if cadastro.get("nomeusuario") else "Primeiro Contato",
+        "nome_paciente": cadastro.get("nomeusuario") or "Ainda não foi fornecido",
+        "data_hora": agora.strftime("%H:%M - %A - %d/%m/%Y"),
+        "numero": number.split("@")[0],
+    }
 
-    texto_resposta = resposta["output"]
-    await salvar_par_conversa(number, texto_completo, texto_resposta)
-    return texto_resposta
+    # Tenta o modelo principal; se falhar (modelo indisponível, erro da API), usa o fallback.
+    llms = [m for m in (clientes.llm, clientes.llm_fallback) if m is not None]
+    if not llms:
+        raise RuntimeError("Nenhum modelo Gemini configurado (defina a Google API Key)")
+
+    ultimo_erro: Exception | None = None
+    for i, modelo in enumerate(llms):
+        try:
+            agente   = create_tool_calling_agent(modelo, tools, prompt)
+            executor = AgentExecutor(agent=agente, tools=tools, verbose=False)
+            resposta = await asyncio.wait_for(
+                executor.ainvoke(payload), timeout=cfg["agent_timeout_seg"]
+            )
+            texto_resposta = resposta["output"]
+            await salvar_par_conversa(number, texto_completo, texto_resposta)
+            return texto_resposta
+        except Exception as exc:
+            ultimo_erro = exc
+            if i + 1 < len(llms):
+                logger.warning(f"[{number}] Modelo principal falhou ({exc}); tentando fallback")
+            continue
+
+    raise ultimo_erro

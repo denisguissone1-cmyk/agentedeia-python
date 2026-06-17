@@ -200,6 +200,9 @@ TOKENS_DEFAULTS = {
     # (ex.: https://meu-dominio.com); a rota é sempre /webhook. token valida o POST.
     "webhook_base_url": os.getenv("WEBHOOK_BASE_URL", ""),
     "webhook_token":    os.getenv("WEBHOOK_TOKEN", ""),
+    # Modelo Gemini (selecionável no painel) + fallback automático se o principal falhar.
+    "gemini_model":          os.getenv("GEMINI_MODEL", "gemini-flash-latest"),
+    "gemini_model_fallback": os.getenv("GEMINI_MODEL_FALLBACK", ""),
 }
 
 

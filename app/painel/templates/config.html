@@ -20,7 +20,9 @@
     <div class="field"><label>WhatsApp (UAZAPI) — URL</label><div class="ctl"><input type="text" name="uazapi_url" value="{{ t.uazapi_url }}"></div></div>
     <div class="field"><label>WhatsApp (UAZAPI) — Token</label><div class="ctl"><input type="password" name="uazapi_token" value="{{ t.uazapi_token }}" autocomplete="off"></div></div>
     <div class="field"><label>OpenAI</label><div class="ctl"><input type="password" name="openai_api_key" value="{{ t.openai_api_key }}" autocomplete="off"></div></div>
-    <div class="field"><label>Google Gemini</label><div class="ctl"><input type="password" name="google_api_key" value="{{ t.google_api_key }}" autocomplete="off"></div></div>
+    <div class="field"><label>Google Gemini — API Key</label><div class="ctl"><input type="password" name="google_api_key" value="{{ t.google_api_key }}" autocomplete="off"></div></div>
+    <div class="field"><label>Modelo principal</label><div class="desc">Lista carregada da sua chave Google</div><div class="ctl"><select name="gemini_model" id="gemini_model" style="width:100%"></select></div></div>
+    <div class="field"><label>Modelo de fallback</label><div class="desc">Usado automaticamente se o principal falhar</div><div class="ctl"><select name="gemini_model_fallback" id="gemini_model_fallback" style="width:100%"></select></div></div>
     <div class="field"><label>Supabase — URL</label><div class="ctl"><input type="text" name="supabase_url" value="{{ t.supabase_url }}"></div></div>
     <div class="field"><label>Supabase — Key</label><div class="ctl"><input type="password" name="supabase_key" value="{{ t.supabase_key }}" autocomplete="off"></div></div>
     <div class="field" style="display:flex;justify-content:flex-end"><button type="submit" class="btn btn-pri">Salvar e recarregar</button></div>
@@ -63,5 +65,27 @@ function copiarWebhook(){
     setTimeout(function(){b.textContent=t},1500);
   });
 }
+
+// ---- popular dropdowns de modelo (lista viva da API) ----
+const MODELO_SEL = {{ (t.gemini_model or '')|tojson }};
+const MODELO_FB  = {{ (t.gemini_model_fallback or '')|tojson }};
+function preencherModelos(lista){
+  // garante que o valor salvo apareça mesmo se não vier na lista
+  [MODELO_SEL, MODELO_FB].forEach(function(v){ if(v && lista.indexOf(v)<0) lista.unshift(v); });
+  fillSelect('gemini_model', lista, MODELO_SEL, false);
+  fillSelect('gemini_model_fallback', lista, MODELO_FB, true);
+}
+function fillSelect(id, lista, sel, comNenhum){
+  var s=document.getElementById(id); if(!s) return; s.innerHTML='';
+  if(comNenhum){ var o=document.createElement('option'); o.value=''; o.textContent='— sem fallback —'; s.appendChild(o); }
+  lista.forEach(function(m){
+    var o=document.createElement('option'); o.value=m; o.textContent=m;
+    if(m===sel) o.selected=true; s.appendChild(o);
+  });
+}
+fetch('/admin/modelos',{cache:'no-store'})
+  .then(function(r){ return r.ok ? r.json() : []; })
+  .then(function(lista){ preencherModelos(lista.length ? lista : [MODELO_SEL||'gemini-flash-latest']); })
+  .catch(function(){ preencherModelos([MODELO_SEL||'gemini-flash-latest']); });
 </script>
 {% endblock %}

@@ -32,14 +32,12 @@ load_dotenv()
 POSTGRES_CONN         = os.getenv("POSTGRES_CONN")
 GOOGLE_CALENDAR_ID    = os.getenv("GOOGLE_CALENDAR_ID")
 GOOGLE_CALENDAR_CREDS = os.getenv("GOOGLE_CALENDAR_CREDS")
-# Modelo Gemini — alias -latest aponta sempre pro flash estável atual (versões fixas
-# como gemini-1.5/2.0-flash vão sendo descontinuadas). Trocável por env GEMINI_MODEL.
-MODELO_GEMINI         = os.getenv("GEMINI_MODEL", "gemini-flash-latest")
 
 # Clientes de IA — None até o lifespan/refresh_clients() inicializá-los
 http_client:   Optional[httpx.AsyncClient]          = None
 openai_client: Optional[AsyncOpenAI]                = None
 llm:           Optional[ChatGoogleGenerativeAI]     = None
+llm_fallback:  Optional[ChatGoogleGenerativeAI]     = None
 _genai_model:  Optional[genai.GenerativeModel]      = None
 
 # Pool de enfileiramento (arq) usado pela API para publicar jobs — None até o lifespan
@@ -99,7 +97,7 @@ async def refresh_clients() -> None:
     Chamado automaticamente no lifespan e pelo painel ao salvar tokens.
     UAZAPI não precisa de refresh — é lido por chamada via get_tokens().
     """
-    global openai_client, llm, _genai_model
+    global openai_client, llm, llm_fallback, _genai_model
     tokens = await get_tokens()
 
     oai_key = tokens.get("openai_api_key")
@@ -108,13 +106,22 @@ async def refresh_clients() -> None:
 
     ggl_key = tokens.get("google_api_key")
     if ggl_key:
+        modelo   = (tokens.get("gemini_model") or "gemini-flash-latest").strip()
+        fallback = (tokens.get("gemini_model_fallback") or "").strip()
         llm = ChatGoogleGenerativeAI(
-            model=MODELO_GEMINI,
+            model=modelo,
             google_api_key=ggl_key,
             temperature=0.3,
+            max_retries=2,   # falha rápido p/ acionar o fallback sem travar 30s
+        )
+        llm_fallback = (
+            ChatGoogleGenerativeAI(
+                model=fallback, google_api_key=ggl_key, temperature=0.3, max_retries=2
+            )
+            if fallback and fallback != modelo else None
         )
         genai.configure(api_key=ggl_key)
-        _genai_model = genai.GenerativeModel(MODELO_GEMINI)
+        _genai_model = genai.GenerativeModel(modelo)
 
 
 @asynccontextmanager
