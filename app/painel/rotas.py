@@ -1,4 +1,5 @@
 import asyncio
+import logging
 import os
 
 from fastapi import APIRouter, Form, Request
@@ -468,12 +469,26 @@ async def sessoes(request: Request):
         conn = get_db_conn()
         try:
             with conn.cursor() as cur:
+                # Cria a tabela se ainda não existir (Postgres gerenciado novo, sem init.sql).
+                cur.execute(
+                    'CREATE TABLE IF NOT EXISTS cadastro ('
+                    '"remoteJid" TEXT PRIMARY KEY, nomeusuario TEXT)'
+                )
                 cur.execute('SELECT "remoteJid", nomeusuario FROM cadastro ORDER BY "remoteJid"')
-                return cur.fetchall()
+                rows = cur.fetchall()
+            conn.commit()
+            return rows
         finally:
             conn.close()
 
-    linhas = await asyncio.to_thread(_listar) or []
+    erro = ""
+    try:
+        linhas = await asyncio.to_thread(_listar) or []
+    except Exception as exc:
+        linhas = []
+        erro = f"Não foi possível acessar o banco de dados ({type(exc).__name__})."
+        logging.getLogger(__name__).error(f"Falha ao listar sessões: {exc}", exc_info=True)
+
     sessoes_lista = []
     for row in linhas:
         numero = row["remoteJid"]
@@ -484,7 +499,7 @@ async def sessoes(request: Request):
     return templates.TemplateResponse(
         "sessoes.html",
         {"request": request, "ativo": "sessoes", "titulo": "Sessões",
-         "sessoes": sessoes_lista},
+         "sessoes": sessoes_lista, "erro": erro},
     )
 
 

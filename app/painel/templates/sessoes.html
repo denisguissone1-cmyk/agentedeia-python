@@ -1,6 +1,7 @@
 {% extends "base.html" %}
 {% block conteudo %}
 <div class="sec"><h2>Conversas por cliente</h2><span style="font-size:12.5px;color:var(--faint)">{{ sessoes|length }} conversa{{ 's' if sessoes|length != 1 else '' }} · clique para abrir o histórico</span></div>
+{% if erro %}<div class="field" style="margin-bottom:12px"><p class="err" style="margin:0">{{ erro }}</p></div>{% endif %}
 <div class="card" style="overflow:hidden">
   <table>
     <thead><tr><th>Cliente</th><th>Número</th><th>Área</th><th>Status</th><th></th></tr></thead>
