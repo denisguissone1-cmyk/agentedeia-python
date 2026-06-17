@@ -3,7 +3,7 @@ import logging
 from datetime import datetime
 
 import pytz
-from langchain.agents import AgentExecutor, create_tool_calling_agent
+from langchain_classic.agents import AgentExecutor, create_tool_calling_agent
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 from app import clientes
@@ -49,7 +49,14 @@ async def chamar_agente(number: str, texto_completo: str, cadastro: dict) -> str
             resposta = await asyncio.wait_for(
                 executor.ainvoke(payload), timeout=cfg["agent_timeout_seg"]
             )
-            texto_resposta = resposta["output"]
+            saida = resposta["output"]
+            if isinstance(saida, list):
+                texto_resposta = "".join(
+                    b.get("text", "") for b in saida
+                    if isinstance(b, dict) and b.get("type") == "text"
+                ).strip()
+            else:
+                texto_resposta = saida
             await salvar_par_conversa(number, texto_completo, texto_resposta)
             return texto_resposta
         except Exception as exc:
