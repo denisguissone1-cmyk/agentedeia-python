@@ -102,6 +102,36 @@ async def resetar(_: str = Depends(require_login)):
 
 # ── Dashboard ────────────────────────────────────────────────────────────────────
 
+def _to_int(v) -> int:
+    if v is None:
+        return 0
+    try:
+        return int(v.decode() if isinstance(v, (bytes, bytearray)) else v)
+    except (ValueError, TypeError):
+        return 0
+
+
+@router.get("/metricas")
+async def metricas(dias: int = 30, _: str = Depends(require_login)):
+    """Série diária (mensagens + agendamentos) dos últimos N dias para o gráfico."""
+    import datetime as _dt
+
+    import pytz
+    dias = max(1, min(int(dias), 365))
+    tz = pytz.timezone("America/Sao_Paulo")
+    hoje = _dt.datetime.now(tz).date()
+    serie = []
+    for i in range(dias - 1, -1, -1):
+        d = (hoje - _dt.timedelta(days=i)).isoformat()
+        try:
+            m = await redis_client.get(f"stats:hist:mensagens:{d}")
+            a = await redis_client.get(f"stats:hist:agendamentos:{d}")
+        except Exception:
+            m = a = None
+        serie.append({"data": d, "mensagens": _to_int(m), "agendamentos": _to_int(a)})
+    return {"serie": serie}
+
+
 @router.get("/dashboard")
 async def dashboard(_: str = Depends(require_login)):
     cfg = await get_config()

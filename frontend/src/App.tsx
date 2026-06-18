@@ -9,7 +9,6 @@ import Tools from "@/pages/Tools"
 import Produtos from "@/pages/Produtos"
 import Prompt from "@/pages/Prompt"
 import Sessoes from "@/pages/Sessoes"
-import Conversa from "@/pages/Conversa"
 import Logs from "@/pages/Logs"
 import Execucoes from "@/pages/Execucoes"
 import Config from "@/pages/Config"
@@ -48,7 +47,7 @@ export default function App() {
         <Route path="/produtos" element={<Produtos />} />
         <Route path="/prompt" element={<Prompt />} />
         <Route path="/sessoes" element={<Sessoes />} />
-        <Route path="/sessoes/:numero" element={<Conversa />} />
+        <Route path="/sessoes/:numero" element={<Sessoes />} />
         <Route path="/logs" element={<Logs />} />
         <Route path="/execucoes" element={<Execucoes />} />
         <Route path="/config" element={<Config />} />

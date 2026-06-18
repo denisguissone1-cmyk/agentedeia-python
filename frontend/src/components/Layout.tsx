@@ -56,7 +56,7 @@ const NAV: NavItem[] = [
   { to: "/tools", label: "Tools", icon: Wrench },
   { to: "/produtos", label: "Produtos", icon: Package },
   { to: "/prompt", label: "Prompt", icon: AlignLeft },
-  { to: "/sessoes", label: "Sessões", icon: MessageSquare },
+  { to: "/sessoes", label: "Conversas", icon: MessageSquare },
   { to: "/logs", label: "Logs", icon: ScrollText },
   { to: "/execucoes", label: "Execuções", icon: ClipboardCheck },
   { to: "/config", label: "Configurações", icon: Settings },

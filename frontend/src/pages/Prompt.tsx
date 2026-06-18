@@ -38,7 +38,7 @@ export default function Prompt() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-5">
+    <div className="space-y-5">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-base font-semibold tracking-tight">Personalidade &amp; instruções</h2>

@@ -3,7 +3,7 @@ import { MessageCircle, Inbox, ListTodo, CalendarCheck, type LucideIcon } from "
 import { api } from "@/lib/api"
 import { eventoIcon, eventoCor } from "@/lib/icons"
 import { cn } from "@/lib/utils"
-import { ChartAreaInteractive } from "@/components/chart-area-interactive"
+import { ActivityChart } from "@/components/ActivityChart"
 import { Badge } from "@/components/ui/badge"
 import {
   Card,
@@ -63,7 +63,7 @@ export default function Dashboard() {
         })}
       </div>
 
-      <ChartAreaInteractive />
+      <ActivityChart />
 
       <div className="grid gap-5 lg:grid-cols-[1.5fr_1fr]">
         <Card>

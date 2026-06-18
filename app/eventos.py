@@ -44,6 +44,17 @@ async def _bump(chave: str) -> None:
         pass
 
 
+async def _hist(metric: str) -> None:
+    """Conta diária por métrica (stats:hist:<metric>:YYYY-MM-DD) para o gráfico do dashboard.
+    Retida ~120 dias. Nunca levanta exceção."""
+    try:
+        chave = f"stats:hist:{metric}:{datetime.now(_TZ).strftime('%Y-%m-%d')}"
+        if await redis_client.incr(chave) == 1:
+            await redis_client.expire(chave, 120 * 86400)
+    except Exception:
+        pass
+
+
 def _quem(nome: str, numero: str) -> str:
     n = (nome or "").strip()
     if n:
@@ -63,6 +74,7 @@ async def recebida(nome: str, numero: str, tipo: str) -> None:
     acao, icone = rotulos.get(tipo, ("enviou uma mensagem", "💬"))
     await emit(f"{_quem(nome, numero)} {acao}", cor="e-blue", filtro="msg", icone=icone)
     await _bump("stats:msgs_hoje")
+    await _hist("mensagens")
 
 
 async def respondida(nome: str, numero: str) -> None:
@@ -92,3 +104,4 @@ async def agendamento(numero: str, urgente: bool = False) -> None:
     else:
         await emit(f"Consulta agendada para {_quem('', numero)}", cor="e-vio", filtro="agenda", icone="📅")
     await _bump("stats:agendamentos_hoje")
+    await _hist("agendamentos")
