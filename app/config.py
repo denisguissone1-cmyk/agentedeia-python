@@ -64,6 +64,15 @@ TOOLS_DESCRICAO_DEFAULT = {
         "Cancela um agendamento pelo event_id. Use consultar_agenda antes para obter o ID "
         "correto. Acione somente após confirmação explícita do contato."
     ),
+    "listar_produtos": (
+        "Consulta os produtos disponíveis (ativos) no catálogo da loja: nome, preço e "
+        "especificações. Use para saber o que há disponível e responder o cliente. "
+        "Cada produto tem um número (#id) usado para enviar as fotos."
+    ),
+    "enviar_fotos_produto": (
+        "Envia as fotos de um produto para o cliente. Recebe produto_id (o #id do "
+        "listar_produtos). Use quando o cliente pedir para ver as fotos de um produto."
+    ),
 }
 
 # Estado (ligada/desligada) de cada tool. O painel inverte; montar_tools respeita.
@@ -76,6 +85,8 @@ TOOLS_ATIVAS_DEFAULT = {
     "consultar_agenda": False,
     "pre_marcacao": False,
     "desmarcar": False,
+    "listar_produtos": False,
+    "enviar_fotos_produto": False,
 }
 
 DEFAULTS = {

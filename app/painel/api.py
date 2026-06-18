@@ -5,11 +5,11 @@ cookie do FastAPI — o SPA chama com credenciais na mesma origem.
 """
 import asyncio
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile
 from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel
 
-from app import presets
+from app import presets, produtos
 from app.config import get_config, get_tokens, redis_client, set_config, set_tokens
 from app.memoria import resetar_todo_historico
 from app.painel import rotas as R  # reutiliza helpers do painel Jinja
@@ -336,3 +336,70 @@ async def logs_stream(request: Request):
 async def execucoes(_: str = Depends(require_login)):
     from app.execucoes import listar
     return {"execucoes": await listar(40)}
+
+
+# ── Produtos (catálogo) ──────────────────────────────────────────────────────────
+
+class ProdutoIn(BaseModel):
+    nome: str
+    preco: str = ""
+    descricao: str = ""
+    ativo: bool = True
+
+
+@router.get("/produtos")
+async def produtos_list(_: str = Depends(require_login)):
+    return {"produtos": await produtos.listar()}
+
+
+@router.post("/produtos")
+async def produtos_create(dados: ProdutoIn, _: str = Depends(require_login)):
+    if not dados.nome.strip():
+        raise HTTPException(status_code=400, detail="O nome do produto é obrigatório")
+    return await produtos.criar(dados.nome, dados.preco, dados.descricao, dados.ativo)
+
+
+@router.put("/produtos/{pid}")
+async def produtos_update(pid: int, dados: ProdutoIn, _: str = Depends(require_login)):
+    if not dados.nome.strip():
+        raise HTTPException(status_code=400, detail="O nome do produto é obrigatório")
+    prod = await produtos.atualizar(pid, dados.nome, dados.preco, dados.descricao, dados.ativo)
+    if not prod:
+        raise HTTPException(status_code=404, detail="Produto não encontrado")
+    return prod
+
+
+@router.post("/produtos/{pid}/toggle")
+async def produtos_toggle(pid: int, _: str = Depends(require_login)):
+    prods = {p["id"]: p for p in await produtos.listar()}
+    if pid not in prods:
+        raise HTTPException(status_code=404, detail="Produto não encontrado")
+    novo = not prods[pid]["ativo"]
+    await produtos.set_ativo(pid, novo)
+    return {"id": pid, "ativo": novo}
+
+
+@router.delete("/produtos/{pid}")
+async def produtos_delete(pid: int, _: str = Depends(require_login)):
+    await produtos.remover(pid)
+    return {"ok": True}
+
+
+@router.post("/produtos/{pid}/fotos")
+async def produtos_upload(pid: int, fotos: list[UploadFile] = File(...), _: str = Depends(require_login)):
+    ids = []
+    for f in fotos:
+        dados = await f.read()
+        if not dados:
+            continue
+        mime = f.content_type or "image/jpeg"
+        if not mime.startswith("image/"):
+            raise HTTPException(status_code=400, detail=f"'{f.filename}' não é uma imagem")
+        ids.append(await produtos.adicionar_foto(pid, mime, dados))
+    return {"ok": True, "fotos": ids}
+
+
+@router.delete("/produtos/fotos/{fid}")
+async def produtos_foto_delete(fid: int, _: str = Depends(require_login)):
+    await produtos.remover_foto(fid)
+    return {"ok": True}

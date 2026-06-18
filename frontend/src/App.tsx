@@ -6,6 +6,7 @@ import Login from "@/pages/Login"
 import Geral from "@/pages/Geral"
 import Dashboard from "@/pages/Dashboard"
 import Tools from "@/pages/Tools"
+import Produtos from "@/pages/Produtos"
 import Prompt from "@/pages/Prompt"
 import Sessoes from "@/pages/Sessoes"
 import Conversa from "@/pages/Conversa"
@@ -44,6 +45,7 @@ export default function App() {
         <Route path="/geral" element={<Geral />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/tools" element={<Tools />} />
+        <Route path="/produtos" element={<Produtos />} />
         <Route path="/prompt" element={<Prompt />} />
         <Route path="/sessoes" element={<Sessoes />} />
         <Route path="/sessoes/:numero" element={<Conversa />} />

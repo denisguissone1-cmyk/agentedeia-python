@@ -12,6 +12,8 @@ import {
   Calendar,
   CalendarCheck,
   CalendarX,
+  Package,
+  Images,
   MessageCircle,
   CheckCircle2,
   CalendarDays,
@@ -38,6 +40,8 @@ const tool: Record<string, LucideIcon> = {
   consultar_agenda: Calendar,
   pre_marcacao: CalendarCheck,
   desmarcar: CalendarX,
+  listar_produtos: Package,
+  enviar_fotos_produto: Images,
 }
 
 export const toolIcon = (name: string): LucideIcon => tool[name] ?? Boxes

@@ -48,6 +48,17 @@ async def health():
     return {"status": "ok" if redis_ok else "degraded", "redis": redis_ok}
 
 
+@app.get("/media/foto/{fid}", include_in_schema=False)
+async def media_foto(fid: int):
+    """Serve a foto de um produto (pública — o painel exibe e a UAZAPI baixa para enviar)."""
+    from app import produtos
+    item = await produtos.foto(fid)
+    if not item:
+        return Response(status_code=404)
+    mime, dados = item
+    return Response(content=dados, media_type=mime, headers={"Cache-Control": "public, max-age=86400"})
+
+
 # ── SPA React (servido em produção; em dev usa-se `npm run dev` com proxy) ───────
 if os.path.isdir(_DIST):
     app.mount("/assets", StaticFiles(directory=os.path.join(_DIST, "assets")), name="assets")

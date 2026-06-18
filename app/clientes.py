@@ -82,6 +82,15 @@ def garantir_schema() -> None:
         statements = [
             'CREATE TABLE IF NOT EXISTS cadastro ('
             '"remoteJid" TEXT PRIMARY KEY, nomeusuario TEXT)',
+            'CREATE TABLE IF NOT EXISTS produto ('
+            'id SERIAL PRIMARY KEY, nome TEXT NOT NULL, preco TEXT DEFAULT \'\', '
+            'descricao TEXT DEFAULT \'\', ativo BOOLEAN NOT NULL DEFAULT TRUE, '
+            'criado_em TIMESTAMPTZ NOT NULL DEFAULT now())',
+            'CREATE TABLE IF NOT EXISTS produto_foto ('
+            'id SERIAL PRIMARY KEY, '
+            'produto_id INTEGER NOT NULL REFERENCES produto(id) ON DELETE CASCADE, '
+            'mime TEXT NOT NULL DEFAULT \'image/jpeg\', dados BYTEA NOT NULL, '
+            'ordem INTEGER NOT NULL DEFAULT 0)',
             *ddl_tools,
         ]
         for sql in statements:

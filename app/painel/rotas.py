@@ -101,6 +101,8 @@ _TOOLS_META = [
     ("consultar_agenda",  "📅", "var(--amber-soft)"),
     ("pre_marcacao",      "✓",  "var(--grn-soft)"),
     ("desmarcar",         "✕",  "#F0F1F4"),
+    ("listar_produtos",   "📦", "var(--blue-soft)"),
+    ("enviar_fotos_produto", "🖼️", "var(--vio-soft)"),
 ]
 
 

@@ -12,8 +12,12 @@ coletar_schemas(), então o primeiro deploy de um agente novo já cria as tabela
 
 def _modulos() -> list:
     """Todos os módulos de tool conhecidos (fonte única p/ schemas)."""
-    from app.tools import buscar_info, cadastrar, consultar_agenda, desmarcar, pre_marcacao
-    return [buscar_info, cadastrar, consultar_agenda, desmarcar, pre_marcacao]
+    from app.tools import (
+        buscar_info, cadastrar, consultar_agenda, desmarcar, enviar_fotos_produto,
+        listar_produtos, pre_marcacao,
+    )
+    return [buscar_info, cadastrar, consultar_agenda, desmarcar, pre_marcacao,
+            listar_produtos, enviar_fotos_produto]
 
 
 def coletar_schemas() -> list:
@@ -32,7 +36,10 @@ def coletar_schemas() -> list:
 
 
 async def montar_tools(number: str) -> list:
-    from app.tools import buscar_info, cadastrar, consultar_agenda, desmarcar, pre_marcacao
+    from app.tools import (
+        buscar_info, cadastrar, consultar_agenda, desmarcar, enviar_fotos_produto,
+        listar_produtos, pre_marcacao,
+    )
     from app.config import get_config
 
     cfg = await get_config()
@@ -48,10 +55,13 @@ async def montar_tools(number: str) -> list:
         tools.append(cadastrar.criar(number, descricoes["cadastrar"]))
     if _ligada("pre_marcacao"):
         tools.append(pre_marcacao.criar(number, descricoes["pre_marcacao"]))
+    if _ligada("enviar_fotos_produto"):
+        tools.append(enviar_fotos_produto.criar(number, descricoes["enviar_fotos_produto"]))
     _sem_numero = {
         "buscar_info": buscar_info,
         "consultar_agenda": consultar_agenda,
         "desmarcar": desmarcar,
+        "listar_produtos": listar_produtos,
     }
     for nome, modulo in _sem_numero.items():
         if _ligada(nome):
