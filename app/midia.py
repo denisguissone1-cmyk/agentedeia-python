@@ -1,4 +1,5 @@
 """Download e análise de mídias recebidas no WhatsApp (áudio, imagem, documento)."""
+import asyncio
 import base64
 import io
 import logging
@@ -7,6 +8,31 @@ from app import clientes
 from app.config import get_tokens
 
 logger = logging.getLogger(__name__)
+
+
+async def converter_para_mp3(audio_bytes: bytes) -> bytes | None:
+    """Converte o áudio recebido (ogg/opus do WhatsApp) para MP3 via ffmpeg.
+
+    MP3 toca no iPhone/Safari (o ogg/opus não). Retorna None se o ffmpeg não estiver
+    disponível ou falhar — aí o chamador guarda o áudio original.
+    """
+    try:
+        proc = await asyncio.create_subprocess_exec(
+            "ffmpeg", "-hide_banner", "-loglevel", "error",
+            "-i", "pipe:0", "-vn", "-f", "mp3", "-b:a", "64k", "pipe:1",
+            stdin=asyncio.subprocess.PIPE,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        out, err = await proc.communicate(input=audio_bytes)
+        if proc.returncode == 0 and out:
+            return out
+        logger.warning(f"ffmpeg falhou (rc={proc.returncode}): {err[:200].decode(errors='ignore')}")
+    except FileNotFoundError:
+        logger.warning("ffmpeg não encontrado — guardando áudio no formato original")
+    except Exception as exc:
+        logger.warning(f"Falha ao converter áudio para MP3: {exc}")
+    return None
 
 
 async def baixar_midia(id_msg: str) -> bytes:
@@ -86,9 +112,13 @@ async def processar_conteudo(dados: dict) -> dict:
             audio_bytes = await baixar_midia(id_msg)
             audio_id = None
             try:
-                audio_id = await audios.salvar(
-                    dados.get("number", ""), dados.get("mimetype", "audio/ogg"), audio_bytes
-                )
+                mp3 = await converter_para_mp3(audio_bytes)
+                if mp3:
+                    audio_id = await audios.salvar(dados.get("number", ""), "audio/mpeg", mp3)
+                else:
+                    audio_id = await audios.salvar(
+                        dados.get("number", ""), dados.get("mimetype", "audio/ogg"), audio_bytes
+                    )
             except Exception as exc:
                 logger.warning(f"Falha ao guardar áudio {id_msg}: {exc}")
             return {"texto": await transcrever_bytes(audio_bytes),

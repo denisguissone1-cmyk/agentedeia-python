@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
-import { MessageSquare, Eye, Search, Settings2, Check, X, FileText } from "lucide-react"
+import { MessageSquare, Eye, Search, Settings2, Check, X, FileText, ArrowLeft } from "lucide-react"
 import { toast } from "sonner"
 import { api, post } from "@/lib/api"
 import { cn } from "@/lib/utils"
@@ -131,6 +131,7 @@ function ChatView({ numero }: { numero: string }) {
   const [mensagens, setMensagens] = useState<Msg[]>([])
   const [busy, setBusy] = useState(false)
   const fimRef = useRef<HTMLDivElement | null>(null)
+  const nav = useNavigate()
 
   const carregar = useCallback(() => {
     api<{ mensagens: Msg[] }>(`/sessoes/${encodeURIComponent(numero)}`)
@@ -159,15 +160,24 @@ function ChatView({ numero }: { numero: string }) {
 
   return (
     <div className="flex h-full flex-1 flex-col">
-      <div className="flex flex-none items-center gap-3 border-b bg-background px-4 py-2.5">
+      <div className="flex flex-none flex-wrap items-center gap-x-3 gap-y-2 border-b bg-background px-3 py-2.5 md:px-4">
+        <Button
+          variant="ghost"
+          size="icon"
+          className="-ml-1 size-8 md:hidden"
+          onClick={() => nav("/sessoes")}
+          title="Voltar"
+        >
+          <ArrowLeft className="size-5" />
+        </Button>
         <span className="font-mono text-sm font-semibold">{numero.split("@")[0]}</span>
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+        <span className="hidden items-center gap-1.5 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground sm:inline-flex">
           <Eye className="size-3.5" /> somente leitura
         </span>
         <div className="ml-auto flex gap-2">
           <ExecSheet numero={numero} />
           <Button variant="outline" size="sm" disabled={busy} onClick={() => acao("pausar")}>
-            Pausar bot
+            Pausar
           </Button>
           <Button size="sm" disabled={busy} onClick={() => acao("despausar")}>
             Despausar
@@ -236,8 +246,13 @@ export default function Sessoes() {
 
   return (
     <div className="flex h-[calc(100svh-7rem)] overflow-hidden rounded-xl border bg-background">
-      {/* lista de conversas */}
-      <div className="flex w-80 flex-none flex-col border-r">
+      {/* lista de conversas — no celular ocupa tudo; some quando uma conversa está aberta */}
+      <div
+        className={cn(
+          "w-full flex-none flex-col border-r md:flex md:w-80",
+          ativo ? "hidden" : "flex"
+        )}
+      >
         <div className="flex-none space-y-2.5 border-b p-3">
           <div className="text-sm font-semibold">Conversas</div>
           <div className="relative">
@@ -288,11 +303,11 @@ export default function Sessoes() {
         </div>
       </div>
 
-      {/* conversa */}
+      {/* conversa — no celular ocupa tudo; o placeholder só aparece no desktop */}
       {ativo ? (
         <ChatView key={ativo} numero={ativo} />
       ) : (
-        <div className="flex flex-1 flex-col items-center justify-center gap-3 text-muted-foreground">
+        <div className="hidden flex-1 flex-col items-center justify-center gap-3 text-muted-foreground md:flex">
           <span className="grid size-14 place-items-center rounded-2xl bg-muted">
             <MessageSquare className="size-7" />
           </span>
