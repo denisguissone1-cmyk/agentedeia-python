@@ -11,5 +11,9 @@ build/
 .mypy_cache/
 htmlcov/
 
+# frontend (Vite/React)
+node_modules/
+frontend/dist/
+
 # segredo local — nunca commitar
 pat.txt

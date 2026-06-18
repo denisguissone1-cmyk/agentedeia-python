@@ -155,6 +155,13 @@ tbody td.nm{color:var(--ink);font-weight:600}
 .cardhead{padding:15px 18px;border-bottom:1px solid var(--line);font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:9px}
 .cardhead .ci{width:28px;height:28px;border-radius:8px;display:grid;place-items:center;font-size:14px}
 
+/* ícones SVG (Lucide) dentro dos chips/containers — cor herda do container */
+.cardhead .ci svg,.stat .ic svg,.tool .ic svg,.ev .ei svg,.bi svg{stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.cardhead .ci svg{width:16px;height:16px}
+.stat .ic svg{width:19px;height:19px}
+.tool .ic svg{width:20px;height:20px}
+.ev .ei svg{width:17px;height:17px}
+
 /* alerts */
 .ok{margin:0 0 14px;background:var(--grn-soft);color:var(--grn);padding:10px 14px;border-radius:8px;font-size:12.5px;font-weight:600}
 .err{margin:0 0 14px;background:var(--red-soft);color:var(--red);padding:10px 14px;border-radius:8px;font-size:12.5px;font-weight:600}

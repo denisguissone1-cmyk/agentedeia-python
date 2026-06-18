@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% import "_icons.html" as ic %}
 {% block conteudo %}
 <div class="sec"><h2>Configurações</h2><span style="font-size:12.5px;color:var(--faint)">Comportamento do atendimento e chaves de acesso</span></div>
 {% if salvo %}<p class="ok">✓ Salvo com sucesso</p>{% endif %}
@@ -7,10 +8,10 @@
 {% if werro %}<p class="err">{{ werro }}</p>{% endif %}
 <div class="cfg-grid">
   <form method="post" action="/admin/config" class="card">
-    <div class="cardhead"><div class="ci" style="background:var(--acc-soft)">🏷️</div>Identidade</div>
+    <div class="cardhead"><div class="ci" style="background:var(--acc-soft);color:var(--acc)">{{ ic.icon('tag') }}</div>Identidade</div>
     <div class="field"><label>Nome do agente</label><div class="desc">Como o agente é chamado no painel (ex.: Sofia, Ana, Atendente)</div><div class="ctl"><input type="text" name="nome_agente" value="{{ c.nome_agente }}" style="width:100%"></div></div>
     <div class="field"><label>Nome da marca / empresa</label><div class="desc">Aparece no topo do painel e na tela de login</div><div class="ctl"><input type="text" name="nome_marca" value="{{ c.nome_marca }}" style="width:100%"></div></div>
-    <div class="cardhead" style="margin-top:18px"><div class="ci" style="background:var(--acc-soft)">🎚️</div>Comportamento</div>
+    <div class="cardhead" style="margin-top:18px"><div class="ci" style="background:var(--acc-soft);color:var(--acc)">{{ ic.icon('sliders') }}</div>Comportamento</div>
     <div class="field"><label>Tempo de espera para juntar mensagens</label><div class="desc">Se a pessoa manda várias seguidas, o {{ nome_agente }} espera esse tempo e responde tudo junto</div><div class="ctl"><input type="number" name="buffer_segundos" value="{{ c.buffer_segundos }}"><span style="font-size:12px;color:var(--faint)">segundos</span></div></div>
     <div class="field"><label>Pausa quando um humano assume</label><div class="desc">Quanto tempo o {{ nome_agente }} fica calado depois que um humano assume a conversa</div><div class="ctl"><input type="number" name="bloqueio_humano_min" value="{{ c.bloqueio_humano_min }}"><span style="font-size:12px;color:var(--faint)">minutos</span></div></div>
     <div class="field"><label>Limite de mensagens por pessoa</label><div class="desc">Proteção contra spam na mesma conversa</div><div class="ctl"><input type="number" name="rate_limit_max" value="{{ c.rate_limit_max }}"><span style="font-size:12px;color:var(--faint)">mensagens</span></div></div>
@@ -21,7 +22,7 @@
   </form>
 
   <form method="post" action="/admin/tokens" class="card">
-    <div class="cardhead"><div class="ci" style="background:var(--grn-soft)">🔑</div>Tokens &amp; integrações</div>
+    <div class="cardhead"><div class="ci" style="background:var(--grn-soft);color:var(--grn)">{{ ic.icon('key') }}</div>Tokens &amp; integrações</div>
     <div class="field"><label>WhatsApp (UAZAPI) — URL</label><div class="ctl"><input type="text" name="uazapi_url" value="{{ t.uazapi_url }}"></div></div>
     <div class="field"><label>WhatsApp (UAZAPI) — Token</label><div class="ctl"><input type="password" name="uazapi_token" value="{{ t.uazapi_token }}" autocomplete="off"></div></div>
     <div class="field"><label>OpenAI</label><div class="ctl"><input type="password" name="openai_api_key" value="{{ t.openai_api_key }}" autocomplete="off"></div></div>
@@ -35,7 +36,7 @@
 </div>
 
 <form method="post" action="/admin/webhook" class="card" style="margin-top:16px">
-  <div class="cardhead"><div class="ci" style="background:var(--vio-soft)">🔗</div>Webhook de entrada (recebe as mensagens)</div>
+  <div class="cardhead"><div class="ci" style="background:var(--vio-soft);color:var(--vio)">{{ ic.icon('link') }}</div>Webhook de entrada (recebe as mensagens)</div>
   <div class="field">
     <label>URL do webhook</label>
     <div class="desc">Cole esta URL na sua instância UAZAPI para ela entregar as mensagens ao {{ nome_agente }}</div>

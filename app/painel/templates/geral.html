@@ -1,26 +1,63 @@
 {% extends "base.html" %}
+{% import "_icons.html" as ic %}
 {% block conteudo %}
-<div class="sec"><h2>Painel Geral</h2><span style="font-size:12.5px;color:var(--faint)">Escolha a base ativa do agente e gerencie as conversas</span></div>
-{% if wmsg %}<p class="ok">✓ {{ wmsg }}</p>{% endif %}
+<style>
+  .pg-intro{font-size:13px;color:var(--mut);margin:2px 2px 18px;line-height:1.55}
+  .bases{padding:8px}
+  .baserow{display:flex;align-items:center;gap:13px;padding:12px 14px;border-radius:10px;cursor:pointer;border:1px solid transparent;transition:.12s}
+  .baserow:hover{background:var(--line2)}
+  .baserow input{position:absolute;opacity:0;pointer-events:none}
+  .baserow .bi{width:36px;height:36px;border-radius:9px;display:grid;place-items:center;flex:none;background:#fff;border:1px solid var(--line);color:var(--mut);transition:.12s}
+  .baserow .bi svg{width:18px;height:18px}
+  .baserow .bn{font-size:14px;font-weight:600;color:var(--ink);text-transform:capitalize;flex:1}
+  .baserow .rad{width:18px;height:18px;border-radius:50%;border:2px solid #D4D6DE;flex:none;display:grid;place-items:center;transition:.12s}
+  .baserow:has(input:checked){background:var(--acc-soft);border-color:#DDD9FB}
+  .baserow:has(input:checked) .bi{color:var(--acc);border-color:#DDD9FB}
+  .baserow:has(input:checked) .rad{border-color:var(--acc)}
+  .baserow:has(input:checked) .rad::after{content:"";width:9px;height:9px;border-radius:50%;background:var(--acc)}
+  .pg-foot{display:flex;justify-content:flex-end;padding:14px 18px;border-top:1px solid var(--line)}
+  .pg-none{font-size:12.5px;color:var(--faint);padding:4px 14px 10px}
+  .danger{border-color:#F3C7C7}
+  .danger .cardhead{border-bottom-color:#F6DADA}
+  .danger .body{padding:16px 18px 18px}
+  .danger .body .desc{font-size:12.5px;color:var(--mut);line-height:1.55}
+  .danger .body .act{display:flex;justify-content:flex-end;margin-top:14px}
+  .btn-danger{background:#E5484D;color:#fff;border-color:#E5484D}
+  .btn-danger:hover{background:#D13B40}
+</style>
+
+<div class="sec"><h2>Central de controle</h2></div>
+<p class="pg-intro">Escolha a base ativa do agente e gerencie as conversas. Só uma base fica ativa por vez, e o motor (código) é o mesmo para todas.</p>
+
+{% if wmsg %}<p class="ok">{{ ic.icon('check') }} {{ wmsg }}</p>{% endif %}
 {% if werro %}<p class="err">{{ werro }}</p>{% endif %}
 
-<form method="post" action="/admin/preset" class="card" onsubmit="return confirm('Ativar esta base? Isso vai SOBRESCREVER o prompt, as tools e a marca atuais.');">
-  <div class="cardhead"><div class="ci" style="background:var(--vio-soft)">📦</div>Base ativa do agente</div>
-  <div class="desc" style="margin-bottom:6px">Só uma base fica ativa por vez. Ativar uma troca o prompt, as tools e a marca para aquele nicho. O motor (código) é o mesmo para todas.</div>
-  {% for p in presets %}
-  <label class="field" style="display:flex;align-items:center;gap:10px;cursor:pointer;margin:0">
-    <input type="radio" name="preset" value="{{ p }}" {% if p == preset_ativo %}checked{% endif %}>
-    <span style="text-transform:capitalize;font-weight:500">{{ p }}</span>
-    {% if p == preset_ativo %}<span class="chip c-grn">ativa</span>{% endif %}
-  </label>
-  {% endfor %}
-  {% if not preset_ativo %}<div class="desc" style="margin-top:8px">Nenhuma base aplicada ainda — a config atual é personalizada.</div>{% endif %}
-  <div class="field" style="display:flex;justify-content:flex-end;margin-top:12px"><button type="submit" class="btn btn-pri">Ativar base</button></div>
+<form method="post" action="/admin/preset" onsubmit="return confirm('Ativar esta base? Isso vai SOBRESCREVER o prompt, as tools e a marca atuais.');">
+  <div class="card">
+    <div class="cardhead"><div class="ci" style="background:var(--vio-soft);color:var(--vio)">{{ ic.icon('layers') }}</div>Base ativa do agente</div>
+    <div class="bases">
+      {% for p in presets %}
+      <label class="baserow">
+        <input type="radio" name="preset" value="{{ p }}" {% if p == preset_ativo %}checked{% endif %}>
+        <span class="bi">{{ ic.icon(p) }}</span>
+        <span class="bn">{{ p }}</span>
+        {% if p == preset_ativo %}<span class="chip c-grn">ativa</span>{% endif %}
+        <span class="rad"></span>
+      </label>
+      {% endfor %}
+    </div>
+    {% if not preset_ativo %}<div class="pg-none">Nenhuma base aplicada ainda — a config atual é personalizada.</div>{% endif %}
+    <div class="pg-foot"><button type="submit" class="btn btn-pri">Ativar base</button></div>
+  </div>
 </form>
 
-<form method="post" action="/admin/reset" class="card" style="margin-top:16px;border-color:#F3C7C7" onsubmit="return confirm('Apagar o histórico de TODAS as conversas? Isso não tem volta. Os contatos são mantidos.');">
-  <div class="cardhead"><div class="ci" style="background:var(--red-soft,#FCEDED)">♻️</div>Reset de conversas</div>
-  <div class="desc">Apaga o histórico de mensagens de todas as conversas (a memória do agente). Cada conversa recomeça do zero, como uma conversa nova. Os contatos cadastrados são mantidos.</div>
-  <div class="field" style="display:flex;justify-content:flex-end;margin:0"><button type="submit" class="btn" style="background:#E5484D;color:#fff;border-color:#E5484D">Zerar histórico de conversas</button></div>
+<form method="post" action="/admin/reset" style="margin-top:18px" onsubmit="return confirm('Apagar o histórico de TODAS as conversas? Isso não tem volta. Os contatos são mantidos.');">
+  <div class="card danger">
+    <div class="cardhead"><div class="ci" style="background:var(--red-soft);color:var(--red)">{{ ic.icon('rotate-ccw') }}</div>Reset de conversas</div>
+    <div class="body">
+      <div class="desc">Apaga o histórico de mensagens de todas as conversas (a memória do agente). Cada conversa recomeça do zero, como uma conversa nova. Os contatos cadastrados são mantidos.</div>
+      <div class="act"><button type="submit" class="btn btn-danger">Zerar histórico de conversas</button></div>
+    </div>
+  </div>
 </form>
 {% endblock %}
