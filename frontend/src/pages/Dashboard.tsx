@@ -3,8 +3,17 @@ import { MessageCircle, Inbox, ListTodo, CalendarCheck, type LucideIcon } from "
 import { api } from "@/lib/api"
 import { eventoIcon, eventoCor } from "@/lib/icons"
 import { cn } from "@/lib/utils"
-import { Card, CardContent } from "@/components/ui/card"
+import { ChartAreaInteractive } from "@/components/chart-area-interactive"
 import { Badge } from "@/components/ui/badge"
+import {
+  Card,
+  CardAction,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card"
 
 type Ev = { texto: string; cor: string; quando?: string }
 type Tool = { nome: string; descricao: string; ativa: boolean }
@@ -14,11 +23,11 @@ type Data = {
   tools: Tool[]
 }
 
-const STATS: { key: keyof Data["stats"]; label: string; icon: LucideIcon; color: string }[] = [
-  { key: "conversas_ativas", label: "Conversas ativas", icon: MessageCircle, color: "bg-blue-100 text-blue-600" },
-  { key: "msgs_hoje", label: "Mensagens hoje", icon: Inbox, color: "bg-violet-100 text-violet-600" },
-  { key: "fila_pendente", label: "Fila pendente", icon: ListTodo, color: "bg-amber-100 text-amber-600" },
-  { key: "agendamentos", label: "Agendamentos hoje", icon: CalendarCheck, color: "bg-emerald-100 text-emerald-600" },
+const CARDS: { key: keyof Data["stats"]; label: string; icon: LucideIcon; tag: string; hint: string }[] = [
+  { key: "conversas_ativas", label: "Conversas ativas", icon: MessageCircle, tag: "agora", hint: "Contatos com conversa aberta" },
+  { key: "msgs_hoje", label: "Mensagens atendidas", icon: Inbox, tag: "hoje", hint: "Total processado nas últimas 24h" },
+  { key: "fila_pendente", label: "Fila pendente", icon: ListTodo, tag: "fila", hint: "Jobs aguardando o worker" },
+  { key: "agendamentos", label: "Agendamentos", icon: CalendarCheck, tag: "hoje", hint: "Marcações criadas hoje" },
 ]
 
 export default function Dashboard() {
@@ -26,32 +35,43 @@ export default function Dashboard() {
   useEffect(() => {
     api<Data>("/dashboard").then(setD).catch(() => {})
   }, [])
-  if (!d) return <div className="text-sm text-muted-foreground">Carregando…</div>
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {STATS.map((s) => {
-          const Icon = s.icon
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {CARDS.map((c) => {
+          const Icon = c.icon
           return (
-            <Card key={s.key}>
-              <CardContent className="p-5">
-                <span className={cn("grid size-9 place-items-center rounded-lg", s.color)}>
-                  <Icon className="size-[18px]" />
-                </span>
-                <div className="mt-4 text-3xl font-bold tracking-tight">{d.stats[s.key]}</div>
-                <div className="mt-0.5 text-sm text-muted-foreground">{s.label}</div>
-              </CardContent>
+            <Card key={c.key}>
+              <CardHeader>
+                <CardDescription>{c.label}</CardDescription>
+                <CardTitle className="text-3xl font-semibold tabular-nums">
+                  {d ? d.stats[c.key] : "—"}
+                </CardTitle>
+                <CardAction>
+                  <Badge variant="outline" className="gap-1">
+                    <Icon className="size-3.5" />
+                    {c.tag}
+                  </Badge>
+                </CardAction>
+              </CardHeader>
+              <CardFooter>
+                <span className="text-sm text-muted-foreground">{c.hint}</span>
+              </CardFooter>
             </Card>
           )
         })}
       </div>
 
+      <ChartAreaInteractive />
+
       <div className="grid gap-5 lg:grid-cols-[1.5fr_1fr]">
         <Card>
+          <CardHeader className="border-b">
+            <CardTitle className="text-sm">O que está acontecendo</CardTitle>
+          </CardHeader>
           <CardContent className="p-0">
-            <div className="border-b px-5 py-4 text-sm font-semibold">O que está acontecendo</div>
-            {d.eventos.length === 0 ? (
+            {!d || d.eventos.length === 0 ? (
               <div className="px-5 py-10 text-center text-sm text-muted-foreground">Sem atividade ainda</div>
             ) : (
               d.eventos.map((ev, i) => {
@@ -73,9 +93,11 @@ export default function Dashboard() {
         </Card>
 
         <Card>
+          <CardHeader className="border-b">
+            <CardTitle className="text-sm">Tools ativas</CardTitle>
+          </CardHeader>
           <CardContent className="p-0">
-            <div className="border-b px-5 py-4 text-sm font-semibold">Tools ativas</div>
-            {d.tools.map((t) => (
+            {d?.tools.map((t) => (
               <div key={t.nome} className="flex items-center justify-between border-b px-5 py-3 last:border-0">
                 <span className="font-mono text-sm">{t.nome}</span>
                 {t.ativa ? (
