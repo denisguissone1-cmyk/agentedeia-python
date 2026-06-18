@@ -32,15 +32,25 @@ A imagem é **ghcr.io/denisguissone1-cmyk/agentedeia-python:latest**. O build do
 #    GitHub → Settings → Developer settings → Personal access tokens (classic)
 echo SEU_PAT | docker login ghcr.io -u denisguissone1-cmyk --password-stdin
 
-# 2. Build (na raiz do projeto)
-docker build -t ghcr.io/denisguissone1-cmyk/agentedeia-python:latest .
+# 2. Build com tag de versão (na raiz do projeto)
+#    Taggeie SEMPRE com uma versão além de :latest, para rastrear e poder fazer rollback.
+VER=v1.0   # marco do motor (semver); use o SHA do git se preferir: VER=$(git rev-parse --short HEAD)
+docker build -t ghcr.io/denisguissone1-cmyk/agentedeia-python:latest \
+             -t ghcr.io/denisguissone1-cmyk/agentedeia-python:$VER .
 
-# 3. Push
+# 3. Push das duas tags
 docker push ghcr.io/denisguissone1-cmyk/agentedeia-python:latest
+docker push ghcr.io/denisguissone1-cmyk/agentedeia-python:$VER
 ```
 
 Depois do push, no EasyPanel clique em **Deploy** nos serviços `app` e `worker` para
 puxarem a imagem nova.
+
+> **Versões (motor):** cada tag (`v1.0`, `v1.1`…) é um marco rastreável do código no
+> GitHub Packages. No EasyPanel você pode **fixar** uma tag (ex.: rodar `v1.0` estável
+> enquanto testa `:latest`) e fazer **rollback** apontando para uma tag anterior. O
+> **nicho** (advogado, fisioterapia…) é escolhido no painel pela base ativa ou pela env
+> `AGENTE_PRESET` — é ortogonal à versão do motor.
 
 **Uma vez só:** o pacote precisa estar **público** para o EasyPanel puxar sem login —
 GitHub → perfil → **Packages** → `agentedeia-python` → *Package settings* → *Change

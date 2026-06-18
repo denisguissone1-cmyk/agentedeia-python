@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Entrar · Sofia</title>
+<title>Entrar · {{ nome_agente }}</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -30,7 +30,7 @@ body{font-family:'Inter',sans-serif;background:var(--canvas);color:var(--ink);le
 </head>
 <body>
 <div class="loginbox">
-  <div class="brand"><div class="logo">L</div><b>Leal &amp; Associados</b><span>Painel da Sofia</span></div>
+  <div class="brand"><div class="logo">{{ logo_letra }}</div><b>{{ nome_marca }}</b><span>Painel do {{ nome_agente }}</span></div>
   {% if erro %}<p class="err">{{ erro }}</p>{% endif %}
   <div class="card">
     <form method="post" action="/admin/login">

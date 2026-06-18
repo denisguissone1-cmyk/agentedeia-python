@@ -4,7 +4,7 @@ import asyncio
 from langchain_community.chat_message_histories import PostgresChatMessageHistory
 from langchain_core.messages import AIMessage, HumanMessage
 
-from app.clientes import POSTGRES_CONN
+from app.clientes import POSTGRES_CONN, get_db_conn
 from app.config import get_config
 
 
@@ -43,6 +43,27 @@ async def carregar_historico(number: str) -> list:
         return msgs
 
     return await asyncio.to_thread(_carregar)
+
+
+async def resetar_todo_historico() -> int:
+    """Apaga TODO o histórico de mensagens (tabela message_store) — toda conversa recomeça
+    do zero. Mantém os contatos (tabela cadastro). Retorna quantas mensagens foram apagadas.
+    Tolerante: se a tabela ainda não existe (nenhuma conversa houve), retorna 0."""
+    def _executar():
+        conn = get_db_conn()
+        try:
+            with conn.cursor() as cur:
+                try:
+                    cur.execute("DELETE FROM message_store")
+                    n = cur.rowcount
+                except Exception:
+                    conn.rollback()
+                    return 0
+            conn.commit()
+            return n or 0
+        finally:
+            conn.close()
+    return await asyncio.to_thread(_executar)
 
 
 async def salvar_par_conversa(number: str, pergunta: str, resposta: str):

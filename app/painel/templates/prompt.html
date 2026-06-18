@@ -1,14 +1,14 @@
 {% extends "base.html" %}
 {% block conteudo %}
-<div class="sec"><h2>Personalidade &amp; instruções da Sofia</h2><span style="font-size:12.5px;color:var(--faint)">Clique para abrir e editar cada bloco</span></div>
+<div class="sec"><h2>Personalidade &amp; instruções do {{ nome_agente }}</h2><span style="font-size:12.5px;color:var(--faint)">Clique para abrir e editar cada bloco</span></div>
 {% if salvo %}<p class="ok">✓ Alterações salvas — valem na hora</p>{% endif %}
 {% if erro %}<p class="err">{{ erro }}</p>{% endif %}
 <form method="post" action="/admin/prompt">
   <div class="card acc">
-    <div class="row open"><span>📋 System Prompt principal</span><span class="meta">quem a Sofia é e o fluxo de triagem</span><span class="chev">›</span></div>
+    <div class="row open"><span>📋 System Prompt principal</span><span class="meta">quem o {{ nome_agente }} é e o fluxo de atendimento</span><span class="chev">›</span></div>
     <div class="body"><textarea class="editor" name="system_prompt" style="min-height:340px">{{ c.system_prompt }}</textarea></div>
 
-    <div class="row"><span>🛠️ Descrição das tools</span><span class="meta">quando a Sofia usa cada ferramenta</span><span class="chev">›</span></div>
+    <div class="row"><span>🛠️ Descrição das tools</span><span class="meta">quando o {{ nome_agente }} usa cada ferramenta</span><span class="chev">›</span></div>
     <div class="body">
       {% for nome, desc in c.tools_descricao.items() %}
       <div class="editor-lbl">{{ nome }}</div>

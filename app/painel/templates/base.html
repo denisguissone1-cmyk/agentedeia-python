@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{{ titulo|default('Painel') }} · Sofia</title>
+<title>{{ titulo|default('Painel') }} · {{ nome_agente }}</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;450;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -163,10 +163,11 @@ tbody td.nm{color:var(--ink);font-weight:600}
 <body>
 
 <aside>
-  <div class="brand"><div class="logo">L</div><div><b>Leal &amp; Associados</b><span>Sofia · triagem</span></div></div>
-  <div class="status"><span class="dot"></span>Sofia atendendo<span class="sw"></span></div>
+  <div class="brand"><div class="logo">{{ logo_letra }}</div><div><b>{{ nome_marca }}</b><span>{{ nome_agente }}</span></div></div>
+  <div class="status"><span class="dot"></span>{{ nome_agente }} atendendo<span class="sw"></span></div>
   <div class="nav-lbl">Menu</div>
   <nav>
+    <a href="/admin/geral" class="{% if ativo == 'geral' %}on{% endif %}"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/><circle cx="9" cy="6" r="2.2" fill="currentColor" stroke="none"/><circle cx="15" cy="12" r="2.2" fill="currentColor" stroke="none"/><circle cx="9" cy="18" r="2.2" fill="currentColor" stroke="none"/></svg>Painel Geral</a>
     <a href="/admin/dashboard" class="{% if ativo == 'dashboard' %}on{% endif %}"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Dashboard</a>
     <a href="/admin/tools" class="{% if ativo == 'tools' %}on{% endif %}"><svg viewBox="0 0 24 24"><path d="M14 7l-1.5-1.5a3 3 0 00-4 0L7 7m0 0l-3 3a3 3 0 000 4l4 4a3 3 0 004 0l3-3"/></svg>Tools<span class="badge">5</span></a>
     <a href="/admin/prompt" class="{% if ativo == 'prompt' %}on{% endif %}"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h10"/></svg>Prompt</a>

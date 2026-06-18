@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block conteudo %}
+<div class="sec"><h2>Painel Geral</h2><span style="font-size:12.5px;color:var(--faint)">Escolha a base ativa do agente e gerencie as conversas</span></div>
+{% if wmsg %}<p class="ok">✓ {{ wmsg }}</p>{% endif %}
+{% if werro %}<p class="err">{{ werro }}</p>{% endif %}
+
+<form method="post" action="/admin/preset" class="card" onsubmit="return confirm('Ativar esta base? Isso vai SOBRESCREVER o prompt, as tools e a marca atuais.');">
+  <div class="cardhead"><div class="ci" style="background:var(--vio-soft)">📦</div>Base ativa do agente</div>
+  <div class="desc" style="margin-bottom:6px">Só uma base fica ativa por vez. Ativar uma troca o prompt, as tools e a marca para aquele nicho. O motor (código) é o mesmo para todas.</div>
+  {% for p in presets %}
+  <label class="field" style="display:flex;align-items:center;gap:10px;cursor:pointer;margin:0">
+    <input type="radio" name="preset" value="{{ p }}" {% if p == preset_ativo %}checked{% endif %}>
+    <span style="text-transform:capitalize;font-weight:500">{{ p }}</span>
+    {% if p == preset_ativo %}<span class="chip c-grn">ativa</span>{% endif %}
+  </label>
+  {% endfor %}
+  {% if not preset_ativo %}<div class="desc" style="margin-top:8px">Nenhuma base aplicada ainda — a config atual é personalizada.</div>{% endif %}
+  <div class="field" style="display:flex;justify-content:flex-end;margin-top:12px"><button type="submit" class="btn btn-pri">Ativar base</button></div>
+</form>
+
+<form method="post" action="/admin/reset" class="card" style="margin-top:16px;border-color:#F3C7C7" onsubmit="return confirm('Apagar o histórico de TODAS as conversas? Isso não tem volta. Os contatos são mantidos.');">
+  <div class="cardhead"><div class="ci" style="background:var(--red-soft,#FCEDED)">♻️</div>Reset de conversas</div>
+  <div class="desc">Apaga o histórico de mensagens de todas as conversas (a memória do agente). Cada conversa recomeça do zero, como uma conversa nova. Os contatos cadastrados são mantidos.</div>
+  <div class="field" style="display:flex;justify-content:flex-end;margin:0"><button type="submit" class="btn" style="background:#E5484D;color:#fff;border-color:#E5484D">Zerar histórico de conversas</button></div>
+</form>
+{% endblock %}

@@ -54,26 +54,45 @@ def get_db_conn():
 
 
 def garantir_schema() -> None:
-    """Cria a tabela `cadastro` se não existir (idempotente).
+    """Cria todas as tabelas necessárias no boot (idempotente).
 
-    Permite subir em qualquer Postgres gerenciado (EasyPanel, RDS, etc.) sem depender
-    do init.sql. Nunca derruba o boot: se o banco ainda não respondeu, segue em frente.
+    Sempre cria a tabela base `cadastro` (registro de contatos, usada pelo webhook
+    independente de tools). Em seguida roda o DDL que cada tool declara via SCHEMA_SQL
+    (veja app/tools/coletar_schemas), de modo que um agente novo já suba com as tabelas
+    das suas tools criadas.
+
+    Permite subir em qualquer Postgres gerenciado (EasyPanel, RDS, etc.) sem depender do
+    init.sql. Nunca derruba o boot: cada statement é isolado, e falha de um não bloqueia
+    os outros nem o arranque do servidor.
     """
     if not POSTGRES_CONN:
         return
     try:
         conn = psycopg2.connect(POSTGRES_CONN)
-        try:
-            with conn.cursor() as cur:
-                cur.execute(
-                    'CREATE TABLE IF NOT EXISTS cadastro ('
-                    '"remoteJid" TEXT PRIMARY KEY, nomeusuario TEXT)'
-                )
-            conn.commit()
-        finally:
-            conn.close()
     except Exception:
-        pass
+        return  # banco ainda não respondeu — segue o boot
+
+    try:
+        try:
+            from app.tools import coletar_schemas
+            ddl_tools = coletar_schemas()
+        except Exception:
+            ddl_tools = []
+
+        statements = [
+            'CREATE TABLE IF NOT EXISTS cadastro ('
+            '"remoteJid" TEXT PRIMARY KEY, nomeusuario TEXT)',
+            *ddl_tools,
+        ]
+        for sql in statements:
+            try:
+                with conn.cursor() as cur:
+                    cur.execute(sql)
+                conn.commit()
+            except Exception:
+                conn.rollback()  # DDL inválido de uma tool não derruba o resto
+    finally:
+        conn.close()
 
 
 def get_calendar_service():
@@ -133,6 +152,8 @@ async def lifespan(app: FastAPI):
     global http_client, arq_pool
     http_client = httpx.AsyncClient(timeout=30.0)
     await asyncio.to_thread(garantir_schema)
+    from app.config import semear_preset_se_vazio
+    await semear_preset_se_vazio()
     await refresh_clients()
     arq_pool = await create_pool(redis_settings())
     yield

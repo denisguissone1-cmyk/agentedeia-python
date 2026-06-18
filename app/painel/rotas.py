@@ -21,6 +21,28 @@ _CAMPOS_INT = [
     "rate_limit_janela", "historico_max", "agent_timeout_seg",
 ]
 
+# Campos de texto livre da marca (editáveis em /admin/config).
+_CAMPOS_MARCA = ["nome_agente", "nome_marca"]
+
+
+async def _marca() -> dict:
+    """Branding ao vivo (nome do agente e da marca) para os templates."""
+    c = await get_config()
+    nome_agente = (c.get("nome_agente") or "Agente").strip()
+    nome_marca = (c.get("nome_marca") or "Agente IA").strip()
+    return {
+        "nome_agente": nome_agente,
+        "nome_marca": nome_marca,
+        "logo_letra": (nome_marca[:1] or "A").upper(),
+    }
+
+
+async def _ctx(request: Request, **extra) -> dict:
+    """Contexto-base de todo template: request + branding + o que a rota passar."""
+    base = {"request": request, **await _marca()}
+    base.update(extra)
+    return base
+
 _CAMPOS_TOKENS = [
     "uazapi_url", "uazapi_token", "openai_api_key",
     "google_api_key", "supabase_url", "supabase_key",
@@ -129,7 +151,7 @@ async def raiz_admin(request: Request):
 
 @router.get("/login", response_class=HTMLResponse)
 async def login_form(request: Request, erro: str = ""):
-    return templates.TemplateResponse("login.html", {"request": request, "erro": erro})
+    return templates.TemplateResponse("login.html", await _ctx(request, erro=erro))
 
 
 @router.post("/login")
@@ -138,7 +160,7 @@ async def login_post(request: Request, usuario: str = Form(...), senha: str = Fo
         request.session["user"] = usuario
         return RedirectResponse("/admin/dashboard", status_code=302)
     return templates.TemplateResponse(
-        "login.html", {"request": request, "erro": "Usuário ou senha inválidos"},
+        "login.html", await _ctx(request, erro="Usuário ou senha inválidos"),
         status_code=401,
     )
 
@@ -200,11 +222,11 @@ async def dashboard(request: Request):
 
     return templates.TemplateResponse(
         "dashboard.html",
-        {
-            "request": request, "ativo": "dashboard", "titulo": "Dashboard",
-            "stats": stats, "eventos": await _eventos_recentes(6),
-            "tools": _tools_view(cfg),
-        },
+        await _ctx(
+            request, ativo="dashboard", titulo="Dashboard",
+            stats=stats, eventos=await _eventos_recentes(6),
+            tools=_tools_view(cfg),
+        ),
     )
 
 
@@ -218,8 +240,8 @@ async def tools_view(request: Request, salvo: str = ""):
     cfg = await get_config()
     return templates.TemplateResponse(
         "tools.html",
-        {"request": request, "ativo": "tools", "titulo": "Tools",
-         "tools": _tools_view(cfg), "salvo": bool(salvo)},
+        await _ctx(request, ativo="tools", titulo="Tools",
+                   tools=_tools_view(cfg), salvo=bool(salvo)),
     )
 
 
@@ -244,8 +266,8 @@ async def prompt_form(request: Request, salvo: str = "", erro: str = ""):
     c = await get_config()
     return templates.TemplateResponse(
         "prompt.html",
-        {"request": request, "ativo": "prompt", "titulo": "Prompt",
-         "c": c, "salvo": bool(salvo), "erro": erro},
+        await _ctx(request, ativo="prompt", titulo="Prompt",
+                   c=c, salvo=bool(salvo), erro=erro),
     )
 
 
@@ -266,8 +288,8 @@ async def prompt_post(request: Request):
         c = await get_config()
         return templates.TemplateResponse(
             "prompt.html",
-            {"request": request, "ativo": "prompt", "titulo": "Prompt",
-             "c": c, "salvo": False, "erro": str(exc)},
+            await _ctx(request, ativo="prompt", titulo="Prompt",
+                       c=c, salvo=False, erro=str(exc)),
             status_code=400,
         )
     return RedirectResponse("/admin/prompt?salvo=1", status_code=302)
@@ -292,9 +314,9 @@ async def config_form(request: Request, salvo: str = "", erro: str = "", wmsg: s
     t = await get_tokens()
     return templates.TemplateResponse(
         "config.html",
-        {"request": request, "ativo": "config", "titulo": "Configurações",
-         "c": c, "t": t, "salvo": bool(salvo), "erro": erro,
-         "webhook_url": _webhook_url(request, t), "wmsg": wmsg, "werro": werro},
+        await _ctx(request, ativo="config", titulo="Configurações",
+                   c=c, t=t, salvo=bool(salvo), erro=erro,
+                   webhook_url=_webhook_url(request, t), wmsg=wmsg, werro=werro),
     )
 
 
@@ -308,14 +330,18 @@ async def config_post(request: Request):
         for campo in _CAMPOS_INT:
             if form.get(campo) not in (None, ""):
                 parcial[campo] = int(form[campo])
+        for campo in _CAMPOS_MARCA:
+            if form.get(campo) not in (None, ""):
+                parcial[campo] = str(form[campo]).strip()
         await set_config(parcial)
     except ValueError as exc:
         c = await get_config()
         t = await get_tokens()
         return templates.TemplateResponse(
             "config.html",
-            {"request": request, "ativo": "config", "titulo": "Configurações",
-             "c": c, "t": t, "salvo": False, "erro": str(exc)},
+            await _ctx(request, ativo="config", titulo="Configurações",
+                       c=c, t=t, salvo=False, erro=str(exc),
+                       webhook_url=_webhook_url(request, t)),
             status_code=400,
         )
     return RedirectResponse("/admin/config?salvo=1", status_code=302)
@@ -330,6 +356,62 @@ async def tokens_post(request: Request):
     await set_tokens(parcial)
     await refresh_clients()
     return RedirectResponse("/admin/config?salvo=1", status_code=302)
+
+
+@router.post("/preset")
+async def aplicar_preset(request: Request):
+    """Ativa uma base (preset): sobrescreve prompt, tools e marca, e marca como ativa.
+    Só uma base fica ativa por vez."""
+    if not logado(request):
+        return RedirectResponse("/admin/login", status_code=302)
+    from urllib.parse import quote
+
+    from app import presets
+    form = await request.form()
+    nome = (form.get("preset") or "").strip()
+    try:
+        cfg = presets.carregar(nome)
+        cfg["preset_ativo"] = nome
+        await set_config(cfg)
+    except Exception as exc:
+        msg = f"Não foi possível ativar a base '{nome}': {exc}"
+        return RedirectResponse(f"/admin/geral?werro={quote(msg)}", status_code=302)
+    msg = f"Base '{nome}' ativada. Revise o prompt, as tools e a marca."
+    return RedirectResponse(f"/admin/geral?wmsg={quote(msg)}", status_code=302)
+
+
+# ── Painel Geral (base ativa + reset) ──────────────────────────────────────────
+
+
+@router.get("/geral", response_class=HTMLResponse)
+async def geral_view(request: Request, wmsg: str = "", werro: str = ""):
+    if not logado(request):
+        return RedirectResponse("/admin/login", status_code=302)
+    from app import presets
+    c = await get_config()
+    return templates.TemplateResponse(
+        "geral.html",
+        await _ctx(request, ativo="geral", titulo="Painel Geral",
+                   presets=presets.listar(), preset_ativo=c.get("preset_ativo", ""),
+                   wmsg=wmsg, werro=werro),
+    )
+
+
+@router.post("/reset")
+async def resetar_conversas(request: Request):
+    """Zera o histórico de mensagens de TODAS as conversas (mantém os contatos)."""
+    if not logado(request):
+        return RedirectResponse("/admin/login", status_code=302)
+    from urllib.parse import quote
+
+    from app.memoria import resetar_todo_historico
+    try:
+        n = await resetar_todo_historico()
+    except Exception as exc:
+        msg = f"Falha ao resetar o histórico: {exc}"
+        return RedirectResponse(f"/admin/geral?werro={quote(msg)}", status_code=302)
+    msg = f"Histórico zerado ({n} mensagens apagadas). As conversas recomeçam do zero."
+    return RedirectResponse(f"/admin/geral?wmsg={quote(msg)}", status_code=302)
 
 
 # ── Webhook de entrada ─────────────────────────────────────────────────────────
@@ -388,8 +470,8 @@ async def logs_view(request: Request):
         return RedirectResponse("/admin/login", status_code=302)
     return templates.TemplateResponse(
         "logs.html",
-        {"request": request, "ativo": "logs", "titulo": "Logs ao vivo",
-         "eventos": await _eventos_recentes(20)},
+        await _ctx(request, ativo="logs", titulo="Logs ao vivo",
+                   eventos=await _eventos_recentes(20)),
     )
 
 
@@ -400,8 +482,8 @@ async def execucoes_view(request: Request):
     from app.execucoes import listar
     return templates.TemplateResponse(
         "execucoes.html",
-        {"request": request, "ativo": "execucoes", "titulo": "Execuções",
-         "execucoes": await listar(40)},
+        await _ctx(request, ativo="execucoes", titulo="Execuções",
+                   execucoes=await listar(40)),
     )
 
 
@@ -498,8 +580,8 @@ async def sessoes(request: Request):
         })
     return templates.TemplateResponse(
         "sessoes.html",
-        {"request": request, "ativo": "sessoes", "titulo": "Sessões",
-         "sessoes": sessoes_lista, "erro": erro},
+        await _ctx(request, ativo="sessoes", titulo="Sessões",
+                   sessoes=sessoes_lista, erro=erro),
     )
 
 
@@ -515,15 +597,17 @@ async def conversa(request: Request, numero: str):
         return h.messages
 
     msgs = await asyncio.to_thread(_hist)
+    marca = await _marca()
     mensagens = [
-        {"role": "Elizabeth" if isinstance(m, AIMessage) else "Paciente",
+        {"role": marca["nome_agente"] if isinstance(m, AIMessage) else "Contato",
+         "ag": isinstance(m, AIMessage),
          "texto": m.content}
         for m in msgs
     ]
     return templates.TemplateResponse(
         "conversa.html",
-        {"request": request, "ativo": "sessoes", "titulo": "Conversa",
-         "numero": numero, "mensagens": mensagens},
+        await _ctx(request, ativo="sessoes", titulo="Conversa",
+                   numero=numero, mensagens=mensagens),
     )
 
 

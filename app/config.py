@@ -13,99 +13,77 @@ redis_client = aioredis.from_url(REDIS_URL, decode_responses=False)
 
 CONFIG_KEY = "config:agente"
 
-# System prompt completo da Elizabeth (idêntico ao do monólito original).
-# Mantido aqui como padrão editável pelo painel.
-SYSTEM_PROMPT_DEFAULT = """# ROLE
+# System prompt PADRÃO genérico. Este é o template-base: um assistente neutro, sem
+# domínio. Cada agente novo sobrescreve isto pelo painel (/admin/config) ou aplicando
+# um preset; a config salva no Redis tem precedência sobre este default.
+# Bases prontas por nicho: app/presets/ (ex.: app/presets/advogado.py).
+SYSTEM_PROMPT_DEFAULT = """# PAPEL
 
-Você é Sofia, atendente do escritório Leal & Associados Advocacia. Você é uma pessoa cordial e atenciosa, seu tom de fala é levemente informal, acolhedor e profissional, sem ser frio ou burocrático.
+Você é {nome_agente}, um assistente virtual de {nome_marca} que atende usuários por mensagem (WhatsApp). Seja cordial, claro e direto, com um tom natural e humano, sem ser frio ou burocrático.
 
-# CONTEXT
+# CONTEXTO
 
-Status Cliente: {status_paciente}
-Nome Conhecido: {nome_paciente}
+Status do contato: {status_contato}
+Nome conhecido: {nome_contato}
 Data/Hora: {data_hora}
-Número de Telefone do Cliente: {numero}
+Número do contato: {numero}
 
-# TASK: Fluxo de Triagem Jurídica - Leal & Associados
+# TAREFA
 
-1. Acolhimento: Apresente-se como atendente do escritório Leal & Associados, dê boas-vindas e solicite o nome da pessoa.
-2. Área Jurídica: Identifique a área envolvida, trabalhista, família, consumidor, previdenciário, criminal, cível ou imobiliário, perguntando sobre o assunto de forma aberta e acolhedora.
-3. Qualificação: Compreenda a situação com perguntas simples: se há urgência ou prazo iminente, o que aconteceu em linhas gerais e se a pessoa já tentou resolver de outra forma.
-4. Documentos: Pergunte quais documentos a pessoa tem disponíveis relacionados ao caso (contratos, notificações, decisões, fotos, prints, etc) e oriente a separar o que tiver.
-5. Opções de Consulta: Utilize a tool buscar_info para informar o valor da consulta inicial e apresente as opções de atendimento presencial ou online, conforme disponibilidade.
-6. Agendamento: Use consultar_agenda para verificar horários disponíveis e apresente as opções. Confirme a preferência da pessoa e utilize pre_marcacao para registrar.
-7. Confirmação: Confirme os dados do agendamento, informe que um advogado do escritório confirmará em breve e despeça-se com cordialidade.
+Entenda o que o usuário precisa e responda de forma útil. Use as ferramentas disponíveis quando elas se aplicarem ao pedido do usuário.
 
-# SPECIFIES
+# REGRAS
 
-- Seja Concisa: WhatsApp exige mensagens curtas e fluidas
-- Nada de Robô: Converse como uma pessoa real, não como um formulário
-- Agrupe com Naturalidade: Se fizer sentido, conecte perguntas sem parecer interrogatório
-- Validação: Se a resposta for vaga, peça mais detalhes com delicadeza
-- Urgência: Se a pessoa mencionar prazo para amanhã, prisão, liminar, bloqueio judicial ou qualquer situação de urgência extrema, priorize o agendamento mais próximo disponível e informe que a equipe será avisada com prioridade
-- Sigilo: Não peça detalhes desnecessários do caso, apenas o suficiente para a triagem. O aprofundamento é papel do advogado na consulta
+- Mensagens curtas e fluidas, adequadas a um chat. Separe parágrafos com uma linha em branco.
+- Converse como uma pessoa real, não como um formulário.
+- Se não tiver certeza de algo, diga com transparência e não invente informações.
+- Use o nome do contato com naturalidade quando ele já for conhecido."""
 
-# CRITICAL RULES
-
-1. Formatação Restrita: Máximo de 3 linhas por mensagem (~80 tokens/linha). Use \\n\\n para pular linhas. Texto 100% corrido, sem rótulos.
-2. Caracteres Proibidos: NUNCA use travessões (-), ponto e vírgula (;), aspas ("), asteriscos (*) ou marcadores de lista/números.
-3. Interação: Faça apenas UMA pergunta por mensagem. Use o nome do cliente apenas na saudação inicial. Nunca finalize o atendimento com uma pergunta.
-4. Fonte e Contexto: Redirecione qualquer fuga de assunto educadamente de volta ao atendimento.
-5. Links: Não envie links, exceto os que existirem na buscar_info.
-6. Regras de Tools: Acione as tools apenas quando cumprirem seus critérios específicos.
-7. NUNCA agende horários depois das 19h.
-8. NUNCA dê parecer jurídico, opine sobre chances de êxito, analise mérito ou diga se a pessoa "tem razão" ou "vai ganhar". Se solicitado, redirecione com naturalidade para a consulta com o advogado responsável.
-9. NUNCA cite leis, artigos, prazos legais ou estratégias jurídicas. Qualquer pergunta desse tipo deve ser redirecionada para a consulta.
-10. Consulta Inicial: A consulta inicial tem valor fixo conforme informado pela buscar_info. Não invente valores nem afirme gratuidade.
-
-# FORMATO DE OUTPUT
-
-- Use \\n\\n para quebras entre parágrafos
-- Texto pronto para envio no WhatsApp
-- Pode usar ponto de interrogação
-- Nunca use ponto final
-- Sem aspas, sem asteriscos"""
-
-# Descrições das tools (o LLM usa isto para decidir quando chamar cada uma).
+# Descrições das tools (o LLM usa isto para decidir quando chamar cada uma). Genéricas
+# de propósito: servem como exemplos editáveis. Versões específicas por nicho ficam nos
+# presets (ex.: app/presets/advogado.py).
 TOOLS_DESCRICAO_DEFAULT = {
     "cadastrar": (
-        "Salva o nome do cliente no banco de dados do escritório. Use SOMENTE UMA VEZ "
-        "assim que o cliente informar o nome próprio válido (1 a 3 palavras). "
+        "Salva o nome do contato no banco de dados. Use SOMENTE UMA VEZ, assim que o "
+        "contato informar o nome próprio dele (1 a 3 palavras). "
         "NÃO use para saudações como 'Oi' ou 'Bom dia'."
     ),
     "buscar_info": (
-        "Busca informações na base de conhecimento do escritório Leal & Associados: "
-        "valor da consulta inicial, áreas de atuação, documentos recomendados por área "
-        "jurídica, política de atendimento presencial e online, perguntas frequentes. "
-        "Use como fonte de verdade absoluta — nunca invente valores ou informações."
+        "Busca informações na base de conhecimento (valores, políticas, perguntas "
+        "frequentes, etc.). Use como fonte de verdade — nunca invente informações."
     ),
     "consultar_agenda": (
-        "Consulta os horários disponíveis na agenda do escritório para agendamento de "
-        "consulta jurídica entre duas datas (after, before em ISO 8601). "
-        "SEMPRE use ANTES de pre_marcacao para evitar conflitos de horário."
+        "Consulta os horários disponíveis na agenda entre duas datas (after, before em "
+        "ISO 8601). SEMPRE use ANTES de pre_marcacao para evitar conflitos de horário."
     ),
     "pre_marcacao": (
-        "Registra o agendamento de uma consulta jurídica na agenda (start, end, summary, "
-        "description). SEMPRE use consultar_agenda antes para evitar conflitos. "
-        "No summary, inclua 'URGENTE' se o cliente relatou urgência extrema. "
-        "No description, registre a área jurídica, modalidade e documentos mencionados."
+        "Registra um agendamento na agenda (start, end, summary, description). SEMPRE use "
+        "consultar_agenda antes para evitar conflitos de horário."
     ),
     "desmarcar": (
-        "Cancela uma consulta jurídica pelo event_id. Use consultar_agenda antes para "
-        "obter o ID correto. Acione somente após confirmação explícita do cliente."
+        "Cancela um agendamento pelo event_id. Use consultar_agenda antes para obter o ID "
+        "correto. Acione somente após confirmação explícita do contato."
     ),
 }
 
 # Estado (ligada/desligada) de cada tool. O painel inverte; montar_tools respeita.
+# Template-base: só `cadastrar` (captura de nome, útil em qualquer agente) vem ligada.
+# As demais ficam DESATIVADAS — os arquivos continuam no repo como exemplos; você liga
+# o que precisar por agente, no painel.
 TOOLS_ATIVAS_DEFAULT = {
     "cadastrar": True,
-    "buscar_info": True,
-    "consultar_agenda": True,
-    "pre_marcacao": True,
-    "desmarcar": True,
+    "buscar_info": False,
+    "consultar_agenda": False,
+    "pre_marcacao": False,
+    "desmarcar": False,
 }
 
 DEFAULTS = {
+    # Identidade/marca exibida no painel (editável em /admin/config).
+    "nome_agente": "Agente",
+    "nome_marca": "Agente IA",
+    # Base (preset) atualmente ativa — vazio = config personalizada (nenhum preset aplicado).
+    "preset_ativo": "",
     "buffer_segundos": 6,
     "bloqueio_humano_min": 15,
     "rate_limit_max": 30,
@@ -136,6 +114,9 @@ def _validar(parcial: dict) -> None:
                 raise ValueError(f"{campo} deve ser inteiro entre {lo} e {hi}")
     if "system_prompt" in parcial and not str(parcial["system_prompt"]).strip():
         raise ValueError("system_prompt não pode ser vazio")
+    for campo in ("nome_agente", "nome_marca"):
+        if campo in parcial and not str(parcial[campo]).strip():
+            raise ValueError(f"{campo} não pode ser vazio")
     if "tools_descricao" in parcial:
         td = parcial["tools_descricao"]
         if not isinstance(td, dict):
@@ -182,6 +163,26 @@ async def set_config(parcial: dict) -> dict:
         atual["tools_ativas"].update(parcial["tools_ativas"])
     await redis_client.set(CONFIG_KEY, json.dumps(atual))
     return atual
+
+
+async def semear_preset_se_vazio() -> None:
+    """No 1º boot, se não há config no Redis e AGENTE_PRESET aponta um preset válido,
+    aplica esse preset. Provisionamento zero-toque: subir com AGENTE_PRESET=advogado já
+    deixa o agente como advogado. Nunca derruba o boot."""
+    nome = (os.getenv("AGENTE_PRESET") or "").strip()
+    if not nome:
+        return
+    try:
+        from app import presets
+        if await redis_client.exists(CONFIG_KEY):
+            return  # já configurado — respeita o que está no painel
+        if nome not in presets.listar():
+            return
+        cfg = presets.carregar(nome)
+        cfg["preset_ativo"] = nome
+        await set_config(cfg)
+    except Exception:
+        pass
 
 
 # ── Tokens de serviços externos ────────────────────────────────────────────────

@@ -27,11 +27,22 @@ async def chamar_agente(number: str, texto_completo: str, cadastro: dict) -> str
     ])
 
     agora = datetime.now(pytz.timezone("America/Sao_Paulo"))
+    status = "Cliente conhecido" if cadastro.get("nomeusuario") else "Primeiro Contato"
+    nome   = cadastro.get("nomeusuario") or "Ainda não foi fornecido"
     payload = {
         "mensagem": texto_completo,
         "historico": mensagens_historico,
-        "status_paciente": "Cliente conhecido" if cadastro.get("nomeusuario") else "Primeiro Contato",
-        "nome_paciente": cadastro.get("nomeusuario") or "Ainda não foi fornecido",
+        # Identidade/marca — o prompt pode usar {nome_agente} e {nome_marca} para
+        # uma mesma base servir vários clientes do mesmo nicho.
+        "nome_agente": cfg.get("nome_agente", "Agente"),
+        "nome_marca": cfg.get("nome_marca", "Agente IA"),
+        # Nomes neutros usados pelo prompt-base genérico.
+        "status_contato": status,
+        "nome_contato": nome,
+        # Aliases legados: prompts antigos (ex.: Sofia em produção) usam estes nomes.
+        # Mantidos para não quebrar agentes cujo prompt salvo ainda os referencia.
+        "status_paciente": status,
+        "nome_paciente": nome,
         "data_hora": agora.strftime("%H:%M - %A - %d/%m/%Y"),
         "numero": number.split("@")[0],
     }

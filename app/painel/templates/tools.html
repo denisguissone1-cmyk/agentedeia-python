@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block conteudo %}
-<div class="sec"><h2>Ferramentas da Sofia</h2><span style="font-size:12.5px;color:var(--faint)">As ações que a Sofia pode executar durante a conversa</span></div>
+<div class="sec"><h2>Ferramentas do {{ nome_agente }}</h2><span style="font-size:12.5px;color:var(--faint)">As ações que o {{ nome_agente }} pode executar durante a conversa</span></div>
 {% if salvo %}<p class="ok">✓ Tool atualizada</p>{% endif %}
 <div class="tools">
   {% for t in tools %}

@@ -12,7 +12,7 @@
         <td class="mono">{{ s.mascara }}</td>
         <td>—</td>
         <td>
-          {% if s.status == 'ativo' %}<span class="chip c-grn">Sofia atendendo</span>
+          {% if s.status == 'ativo' %}<span class="chip c-grn">{{ nome_agente }} atendendo</span>
           {% else %}<span class="chip c-gray">pausada</span>{% endif %}
         </td>
         <td style="text-align:right"><a class="btn" style="padding:5px 11px" href="/admin/sessoes/{{ s.numero }}">Abrir →</a></td>
