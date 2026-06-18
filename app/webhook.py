@@ -15,7 +15,7 @@ from app.buffer import buffer_mensagens
 from app.clientes import get_db_conn
 from app.config import get_tokens
 from app.memoria import inserir_na_memoria
-from app.midia import processar_mensagem_por_tipo
+from app.midia import processar_conteudo
 
 logger = logging.getLogger(__name__)
 
@@ -203,7 +203,8 @@ async def processar_em_background(body: dict) -> None:
             exe.encerrar("ignorada")
             return
 
-        texto_mensagem = await processar_mensagem_por_tipo(dados)
+        conteudo       = await processar_conteudo(dados)
+        texto_mensagem = conteudo["texto"]
         exe.passo("Conteúdo processado", f"{len(texto_mensagem)} chars ({dados['messagetype']})")
         await eventos.recebida(dados["nome"], number, dados["messagetype"])
 
@@ -219,6 +220,8 @@ async def processar_em_background(body: dict) -> None:
 
         mensagem_para_buffer = json.dumps({
             "txtmessage": texto_mensagem,
+            "tipo":       conteudo["tipo"],
+            "audio_id":   conteudo["audio_id"],
             "timestamp":  dados["timestamp"],
             "id_msg":     dados["id_msg"],
         })
@@ -229,8 +232,15 @@ async def processar_em_background(body: dict) -> None:
             exe.encerrar("aguardando")
             return
 
-        textos         = [json.loads(m)["txtmessage"] for m in mensagens if m]
+        agrupadas      = [json.loads(m) for m in mensagens if m]
+        textos         = [d.get("txtmessage", "") for d in agrupadas]
         texto_completo = "\n".join(t for t in textos if t.strip())
+        # Metadados por mensagem para o painel renderizar áudio + transcrição (não vão ao LLM).
+        itens = [
+            {"tipo": d.get("tipo", "texto"), "texto": d.get("txtmessage", ""),
+             "audio_id": d.get("audio_id")}
+            for d in agrupadas if d.get("txtmessage", "").strip() or d.get("audio_id")
+        ]
 
         if not texto_completo.strip():
             exe.passo("Sem texto para enviar", "nada a processar após o buffer")
@@ -240,7 +250,7 @@ async def processar_em_background(body: dict) -> None:
         exe.passo("Enviando ao agente", f"{len(texto_completo)} chars")
         logger.info(f"[{req_id}] [{number}] Enviando ao agente ({len(texto_completo)} chars)")
         try:
-            texto_resposta = await chamar_agente(number, texto_completo, cadastro)
+            texto_resposta = await chamar_agente(number, texto_completo, cadastro, itens)
         except asyncio.TimeoutError:
             exe.erro("Agente", "timeout — excedeu o tempo limite")
             logger.error(f"[{req_id}] [{number}] Timeout no agente")

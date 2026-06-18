@@ -14,7 +14,7 @@ from app.tools import montar_tools
 logger = logging.getLogger(__name__)
 
 
-async def chamar_agente(number: str, texto_completo: str, cadastro: dict) -> str:
+async def chamar_agente(number: str, texto_completo: str, cadastro: dict, itens: list | None = None) -> str:
     cfg = await get_config()
     mensagens_historico = await carregar_historico(number)
     tools = await montar_tools(number)
@@ -68,7 +68,7 @@ async def chamar_agente(number: str, texto_completo: str, cadastro: dict) -> str
                 ).strip()
             else:
                 texto_resposta = saida
-            await salvar_par_conversa(number, texto_completo, texto_resposta)
+            await salvar_par_conversa(number, texto_completo, texto_resposta, itens)
             return texto_resposta
         except Exception as exc:
             ultimo_erro = exc

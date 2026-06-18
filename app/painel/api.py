@@ -304,11 +304,27 @@ async def conversa(numero: str, _: str = Depends(require_login)):
 
     msgs = await asyncio.to_thread(_hist)
     m = await _marca()
-    mensagens = [
-        {"role": m["nome_agente"] if isinstance(x, AIMessage) else "Contato",
-         "ag": isinstance(x, AIMessage), "texto": x.content}
-        for x in msgs
-    ]
+    nome_ag = m["nome_agente"]
+    mensagens: list[dict] = []
+    for x in msgs:
+        if isinstance(x, AIMessage):
+            # O agente envia cada parágrafo (\n\n) como uma mensagem separada no WhatsApp;
+            # espelhamos isso em bolhas separadas.
+            partes = [p.strip() for p in (x.content or "").split("\n\n") if p.strip()]
+            for p in (partes or [x.content]):
+                mensagens.append({"role": nome_ag, "ag": True, "tipo": "texto", "texto": p})
+        else:
+            itens = (getattr(x, "additional_kwargs", None) or {}).get("itens")
+            if itens:
+                for it in itens:
+                    if it.get("tipo") == "AudioMessage" and it.get("audio_id"):
+                        mensagens.append({"role": "Contato", "ag": False, "tipo": "audio",
+                                          "audio_id": it["audio_id"], "texto": it.get("texto", "")})
+                    else:
+                        mensagens.append({"role": "Contato", "ag": False, "tipo": "texto",
+                                          "texto": it.get("texto", "")})
+            else:
+                mensagens.append({"role": "Contato", "ag": False, "tipo": "texto", "texto": x.content})
     return {"numero": numero, "mensagens": mensagens}
 
 

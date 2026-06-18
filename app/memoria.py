@@ -66,13 +66,20 @@ async def resetar_todo_historico() -> int:
     return await asyncio.to_thread(_executar)
 
 
-async def salvar_par_conversa(number: str, pergunta: str, resposta: str):
-    """Salva o par pergunta/resposta após o agente responder."""
+async def salvar_par_conversa(number: str, pergunta: str, resposta: str, itens: list | None = None):
+    """Salva o par pergunta/resposta após o agente responder.
+
+    `itens` (opcional) é a lista de mensagens originais do contato com seu tipo
+    (áudio/texto) e audio_id — guardada em additional_kwargs só para o painel
+    renderizar (áudio + transcrição). Não afeta o conteúdo lido pelo LLM.
+    """
+    kwargs = {"itens": itens} if itens else {}
+
     def _salvar():
         hist = PostgresChatMessageHistory(
             connection_string=POSTGRES_CONN, session_id=f"{number}_chat",
         )
-        hist.add_message(HumanMessage(content=pergunta))
+        hist.add_message(HumanMessage(content=pergunta, additional_kwargs=kwargs))
         hist.add_message(AIMessage(content=resposta))
 
     await asyncio.to_thread(_salvar)

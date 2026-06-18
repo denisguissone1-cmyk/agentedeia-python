@@ -12,7 +12,6 @@ from app.clientes import lifespan
 from app.config import redis_client
 from app.painel.api import router as api_router
 from app.painel.auth import SESSION_SECRET
-from app.painel.rotas import router as painel_router
 from app.webhook import validar_token_webhook
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
@@ -24,7 +23,6 @@ _DIST = os.path.join(_ROOT, "frontend", "dist")
 app = FastAPI(lifespan=lifespan)
 app.add_middleware(SessionMiddleware, secret_key=SESSION_SECRET)
 app.include_router(api_router)       # /api/* (JSON, consumido pelo SPA)
-app.include_router(painel_router)    # /admin/* (painel Jinja legado — mantido por ora)
 
 
 @app.post("/webhook")
@@ -57,6 +55,17 @@ async def media_foto(fid: int):
         return Response(status_code=404)
     mime, dados = item
     return Response(content=dados, media_type=mime, headers={"Cache-Control": "public, max-age=86400"})
+
+
+@app.get("/media/audio/{aid}", include_in_schema=False)
+async def media_audio(aid: int):
+    """Serve o áudio recebido de um contato (o painel toca no player das Conversas)."""
+    from app import audios
+    item = await audios.obter(aid)
+    if not item:
+        return Response(status_code=404)
+    mime, dados = item
+    return Response(content=dados, media_type=mime, headers={"Cache-Control": "private, max-age=3600"})
 
 
 # ── SPA React (servido em produção; em dev usa-se `npm run dev` com proxy) ───────

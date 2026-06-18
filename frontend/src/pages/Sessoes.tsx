@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
-import { MessageSquare, Eye, Search, Settings2, Check, X } from "lucide-react"
+import { MessageSquare, Eye, Search, Settings2, Check, X, FileText } from "lucide-react"
 import { toast } from "sonner"
 import { api, post } from "@/lib/api"
 import { cn } from "@/lib/utils"
@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/sheet"
 
 type Sessao = { numero: string; nome: string | null; mascara: string; status: string }
-type Msg = { role: string; ag: boolean; texto: string }
+type Msg = { role: string; ag: boolean; texto: string; tipo?: string; audio_id?: number }
 type Passo = { nome: string; status: string; detalhe: string; hora: string }
 type Exec = { req_id: string; hora: string; status: string; resumo: string; passos: Passo[] }
 
@@ -102,6 +102,31 @@ function ExecSheet({ numero }: { numero: string }) {
   )
 }
 
+function AudioBubble({ m }: { m: Msg }) {
+  const [verTexto, setVerTexto] = useState(false)
+  return (
+    <div className="max-w-[80%] rounded-2xl rounded-bl-sm border border-black/5 bg-white px-2.5 py-2 shadow-sm">
+      <audio controls preload="none" src={`/media/audio/${m.audio_id}`} className="h-10 w-64 max-w-full" />
+      {m.texto && (
+        <>
+          <button
+            onClick={() => setVerTexto((v) => !v)}
+            className="mt-1.5 flex items-center gap-1 text-xs font-medium text-emerald-700 hover:underline"
+          >
+            <FileText className="size-3.5" />
+            {verTexto ? "Ocultar transcrição" : "Ver transcrição"}
+          </button>
+          {verTexto && (
+            <div className="mt-1 whitespace-pre-wrap break-words border-t pt-1.5 text-sm leading-relaxed text-zinc-600">
+              {m.texto}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
 function ChatView({ numero }: { numero: string }) {
   const [mensagens, setMensagens] = useState<Msg[]>([])
   const [busy, setBusy] = useState(false)
@@ -158,14 +183,18 @@ function ChatView({ numero }: { numero: string }) {
           <div className="flex flex-col gap-1.5">
             {mensagens.map((m, i) => (
               <div key={i} className={cn("flex", m.ag ? "justify-end" : "justify-start")}>
-                <div
-                  className={cn(
-                    "max-w-[72%] whitespace-pre-wrap break-words rounded-2xl px-3 py-2 text-sm leading-relaxed text-zinc-800 shadow-sm",
-                    m.ag ? "rounded-br-sm bg-[#d9fdd3]" : "rounded-bl-sm border border-black/5 bg-white"
-                  )}
-                >
-                  {m.texto}
-                </div>
+                {m.tipo === "audio" ? (
+                  <AudioBubble m={m} />
+                ) : (
+                  <div
+                    className={cn(
+                      "max-w-[72%] whitespace-pre-wrap break-words rounded-2xl px-3 py-2 text-sm leading-relaxed text-zinc-800 shadow-sm",
+                      m.ag ? "rounded-br-sm bg-[#d9fdd3]" : "rounded-bl-sm border border-black/5 bg-white"
+                    )}
+                  >
+                    {m.texto}
+                  </div>
+                )}
               </div>
             ))}
             <div ref={fimRef} />
