@@ -6,6 +6,7 @@ import {
   Sparkles,
   Smile,
   Activity,
+  Smartphone,
   Boxes,
   UserPlus,
   Search,
@@ -30,9 +31,25 @@ const niche: Record<string, LucideIcon> = {
   estetica: Sparkles,
   odontologia: Smile,
   fisioterapia: Activity,
+  loja_iphone: Smartphone,
 }
 
 export const nicheIcon = (name: string): LucideIcon => niche[name] ?? Boxes
+
+// Rótulos de exibição das bases (a chave é o nome do arquivo; aqui fica bonito).
+const labels: Record<string, string> = {
+  advogado: "Advogado",
+  imobiliaria: "Imobiliária",
+  corretor: "Corretor",
+  barbearia: "Barbearia",
+  estetica: "Estética",
+  odontologia: "Odontologia",
+  fisioterapia: "Fisioterapia",
+  loja_iphone: "Loja de iPhone",
+}
+
+export const presetLabel = (key: string): string =>
+  labels[key] ?? key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())
 
 const tool: Record<string, LucideIcon> = {
   cadastrar: UserPlus,

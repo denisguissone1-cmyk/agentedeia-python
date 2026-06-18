@@ -2,7 +2,7 @@ import { useEffect, useState } from "react"
 import { Layers, RotateCcw } from "lucide-react"
 import { toast } from "sonner"
 import { api, post } from "@/lib/api"
-import { nicheIcon } from "@/lib/icons"
+import { nicheIcon, presetLabel } from "@/lib/icons"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -112,7 +112,7 @@ export default function Geral() {
                   >
                     <Icon className="size-[18px]" />
                   </span>
-                  <span className="flex-1 text-sm font-semibold capitalize">{p}</span>
+                  <span className="flex-1 text-sm font-semibold">{presetLabel(p)}</span>
                   {ativo && <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">ativa</Badge>}
                   <RadioGroupItem value={p} id={`p-${p}`} />
                 </Label>
