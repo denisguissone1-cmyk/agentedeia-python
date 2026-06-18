@@ -105,15 +105,36 @@ export default function Produtos() {
 
   const upload = async (pid: number, files: FileList | null) => {
     if (!files || !files.length) return
-    const fd = new FormData()
-    Array.from(files).forEach((f) => fd.append("fotos", f))
-    const res = await fetch(`/api/produtos/${pid}/fotos`, { method: "POST", body: fd, credentials: "include" })
-    if (res.ok) {
-      await carregar()
-      toast.success("Foto(s) adicionada(s)")
-    } else {
-      toast.error("Falha no upload")
+    let ok = 0
+    const falhas: string[] = []
+    // Uma foto por requisição: resiliente a lotes grandes e mostra falhas individuais.
+    for (const f of Array.from(files)) {
+      const fd = new FormData()
+      fd.append("fotos", f)
+      try {
+        const res = await fetch(`/api/produtos/${pid}/fotos`, {
+          method: "POST",
+          body: fd,
+          credentials: "include",
+        })
+        if (res.status === 401) {
+          toast.error("Sessão expirada — entre de novo")
+          window.location.href = "/login"
+          return
+        }
+        if (res.ok) {
+          ok++
+        } else {
+          const d = (await res.json().catch(() => null)) as { detail?: string } | null
+          falhas.push(`${f.name}: ${d?.detail || res.status}`)
+        }
+      } catch {
+        falhas.push(`${f.name}: erro de rede`)
+      }
     }
+    await carregar()
+    if (ok) toast.success(`${ok} foto(s) adicionada(s)`)
+    if (falhas.length) toast.error(`Falha em ${falhas.length}: ${falhas[0]}`)
   }
 
   const removerFoto = async (fid: number) => {
