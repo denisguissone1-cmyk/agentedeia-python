@@ -1,19 +1,105 @@
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useNavigate, useParams } from "react-router-dom"
-import { MessageSquare, Eye } from "lucide-react"
+import { MessageSquare, Eye, Search, Settings2, Check, X } from "lucide-react"
 import { toast } from "sonner"
 import { api, post } from "@/lib/api"
 import { cn } from "@/lib/utils"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet"
 
 type Sessao = { numero: string; nome: string | null; mascara: string; status: string }
 type Msg = { role: string; ag: boolean; texto: string }
+type Passo = { nome: string; status: string; detalhe: string; hora: string }
+type Exec = { req_id: string; hora: string; status: string; resumo: string; passos: Passo[] }
+
+const STATUS: Record<string, string> = {
+  sucesso: "bg-emerald-100 text-emerald-700",
+  falha: "bg-red-100 text-red-700",
+  ignorada: "bg-muted text-muted-foreground",
+  aguardando: "bg-amber-100 text-amber-700",
+  andamento: "bg-blue-100 text-blue-700",
+}
 
 function iniciais(s: Sessao): string {
   const base = (s.nome || s.mascara || "?").trim()
-  const partes = base.split(/\s+/)
-  return ((partes[0]?.[0] ?? "") + (partes[1]?.[0] ?? "")).toUpperCase() || "?"
+  const p = base.split(/\s+/)
+  return ((p[0]?.[0] ?? "") + (p[1]?.[0] ?? "")).toUpperCase() || "?"
+}
+
+function ExecSheet({ numero }: { numero: string }) {
+  const [execs, setExecs] = useState<Exec[]>([])
+  const onOpen = (o: boolean) => {
+    if (o)
+      api<{ execucoes: Exec[] }>(`/sessoes/${encodeURIComponent(numero)}/execucoes`)
+        .then((d) => setExecs(d.execucoes))
+        .catch(() => {})
+  }
+  return (
+    <Sheet onOpenChange={onOpen}>
+      <SheetTrigger asChild>
+        <Button variant="outline" size="icon" title="Execuções desta conversa">
+          <Settings2 className="size-4" />
+        </Button>
+      </SheetTrigger>
+      <SheetContent className="w-full overflow-auto sm:max-w-md">
+        <SheetHeader>
+          <SheetTitle>Execuções desta conversa</SheetTitle>
+          <SheetDescription>O que o agente fez em cada mensagem deste contato.</SheetDescription>
+        </SheetHeader>
+        <div className="space-y-3 px-4 pb-6">
+          {execs.length === 0 ? (
+            <div className="py-10 text-center text-sm text-muted-foreground">
+              Nenhuma execução registrada para este contato.
+            </div>
+          ) : (
+            execs.map((ex) => (
+              <div key={ex.req_id} className="rounded-lg border p-3">
+                <div className="flex items-center gap-2">
+                  <Badge className={cn("font-medium hover:opacity-100", STATUS[ex.status] ?? "bg-muted")}>
+                    {ex.status}
+                  </Badge>
+                  <span className="min-w-0 flex-1 truncate text-sm text-foreground/80">{ex.resumo}</span>
+                  <span className="text-xs text-muted-foreground">{ex.hora}</span>
+                </div>
+                <ol className="ml-2 mt-3 space-y-2 border-l pl-4">
+                  {ex.passos.map((p, i) => {
+                    const erro = p.status === "erro"
+                    return (
+                      <li key={i} className="relative">
+                        <span
+                          className={cn(
+                            "absolute -left-[1.4rem] grid size-5 place-items-center rounded-full text-white",
+                            erro ? "bg-red-500" : "bg-emerald-500"
+                          )}
+                        >
+                          {erro ? <X className="size-3" /> : <Check className="size-3" />}
+                        </span>
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-sm font-medium">{p.nome}</span>
+                          <span className="text-xs text-muted-foreground">{p.hora}</span>
+                        </div>
+                        {p.detalhe && <div className="text-xs text-muted-foreground">{p.detalhe}</div>}
+                      </li>
+                    )
+                  })}
+                </ol>
+              </div>
+            ))
+          )}
+        </div>
+      </SheetContent>
+    </Sheet>
+  )
 }
 
 function ChatView({ numero }: { numero: string }) {
@@ -54,6 +140,7 @@ function ChatView({ numero }: { numero: string }) {
           <Eye className="size-3.5" /> somente leitura
         </span>
         <div className="ml-auto flex gap-2">
+          <ExecSheet numero={numero} />
           <Button variant="outline" size="sm" disabled={busy} onClick={() => acao("pausar")}>
             Pausar bot
           </Button>
@@ -94,6 +181,7 @@ export default function Sessoes() {
   const nav = useNavigate()
   const [sessoes, setSessoes] = useState<Sessao[]>([])
   const [erro, setErro] = useState("")
+  const [busca, setBusca] = useState("")
 
   useEffect(() => {
     api<{ sessoes: Sessao[]; erro: string }>("/sessoes")
@@ -101,22 +189,46 @@ export default function Sessoes() {
         setSessoes(d.sessoes)
         setErro(d.erro)
       })
-      .catch(() => setErro("Falha ao carregar as sessões"))
+      .catch(() => setErro("Falha ao carregar as conversas"))
   }, [])
 
   const ativo = numero ? decodeURIComponent(numero) : ""
+
+  const filtradas = useMemo(() => {
+    const q = busca.trim().toLowerCase()
+    if (!q) return sessoes
+    return sessoes.filter(
+      (s) =>
+        (s.nome || "").toLowerCase().includes(q) ||
+        s.numero.toLowerCase().includes(q) ||
+        s.mascara.toLowerCase().includes(q)
+    )
+  }, [sessoes, busca])
 
   return (
     <div className="flex h-[calc(100svh-7rem)] overflow-hidden rounded-xl border bg-background">
       {/* lista de conversas */}
       <div className="flex w-80 flex-none flex-col border-r">
-        <div className="flex-none border-b px-4 py-3 text-sm font-semibold">Conversas</div>
+        <div className="flex-none space-y-2.5 border-b p-3">
+          <div className="text-sm font-semibold">Conversas</div>
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Buscar nome ou número…"
+              value={busca}
+              onChange={(e) => setBusca(e.target.value)}
+              className="h-9 pl-8"
+            />
+          </div>
+        </div>
         {erro && <p className="m-3 rounded-md bg-destructive/10 px-3 py-2 text-xs text-destructive">{erro}</p>}
         <div className="flex-1 overflow-auto">
-          {sessoes.length === 0 ? (
-            <div className="px-4 py-10 text-center text-sm text-muted-foreground">Nenhuma conversa</div>
+          {filtradas.length === 0 ? (
+            <div className="px-4 py-10 text-center text-sm text-muted-foreground">
+              {busca ? "Nada encontrado" : "Nenhuma conversa"}
+            </div>
           ) : (
-            sessoes.map((s) => (
+            filtradas.map((s) => (
               <button
                 key={s.numero}
                 onClick={() => nav(`/sessoes/${encodeURIComponent(s.numero)}`)}

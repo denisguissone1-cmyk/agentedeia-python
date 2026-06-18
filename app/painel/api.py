@@ -312,6 +312,15 @@ async def conversa(numero: str, _: str = Depends(require_login)):
     return {"numero": numero, "mensagens": mensagens}
 
 
+@router.get("/sessoes/{numero}/execucoes")
+async def conversa_execucoes(numero: str, _: str = Depends(require_login)):
+    """Execuções (traces) referentes a um contato específico."""
+    from app.execucoes import _mask, listar
+    alvo = _mask(numero)
+    todas = await listar(50)
+    return {"execucoes": [e for e in todas if e.get("numero") == alvo]}
+
+
 @router.post("/sessoes/{numero}/pausar")
 async def pausar(numero: str, _: str = Depends(require_login)):
     await redis_client.set(f"{numero}_block", "true")
