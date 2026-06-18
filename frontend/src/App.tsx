@@ -4,6 +4,14 @@ import { api } from "@/lib/api"
 import Layout from "@/components/Layout"
 import Login from "@/pages/Login"
 import Geral from "@/pages/Geral"
+import Dashboard from "@/pages/Dashboard"
+import Tools from "@/pages/Tools"
+import Prompt from "@/pages/Prompt"
+import Sessoes from "@/pages/Sessoes"
+import Conversa from "@/pages/Conversa"
+import Logs from "@/pages/Logs"
+import Execucoes from "@/pages/Execucoes"
+import Config from "@/pages/Config"
 
 function Guard({ children }: { children: ReactNode }) {
   const [state, setState] = useState<"loading" | "ok" | "no">("loading")
@@ -34,6 +42,14 @@ export default function App() {
         }
       >
         <Route path="/geral" element={<Geral />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/tools" element={<Tools />} />
+        <Route path="/prompt" element={<Prompt />} />
+        <Route path="/sessoes" element={<Sessoes />} />
+        <Route path="/sessoes/:numero" element={<Conversa />} />
+        <Route path="/logs" element={<Logs />} />
+        <Route path="/execucoes" element={<Execucoes />} />
+        <Route path="/config" element={<Config />} />
         <Route path="*" element={<Navigate to="/geral" replace />} />
       </Route>
     </Routes>

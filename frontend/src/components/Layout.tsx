@@ -19,13 +19,13 @@ type NavItem = { to: string; label: string; icon: LucideIcon; enabled: boolean }
 
 const NAV: NavItem[] = [
   { to: "/geral", label: "Painel Geral", icon: SlidersHorizontal, enabled: true },
-  { to: "/dashboard", label: "Dashboard", icon: LayoutGrid, enabled: false },
-  { to: "/tools", label: "Tools", icon: Wrench, enabled: false },
-  { to: "/prompt", label: "Prompt", icon: AlignLeft, enabled: false },
-  { to: "/sessoes", label: "Sessões", icon: MessageSquare, enabled: false },
-  { to: "/logs", label: "Logs", icon: ScrollText, enabled: false },
-  { to: "/execucoes", label: "Execuções", icon: ClipboardCheck, enabled: false },
-  { to: "/config", label: "Configurações", icon: Settings, enabled: false },
+  { to: "/dashboard", label: "Dashboard", icon: LayoutGrid, enabled: true },
+  { to: "/tools", label: "Tools", icon: Wrench, enabled: true },
+  { to: "/prompt", label: "Prompt", icon: AlignLeft, enabled: true },
+  { to: "/sessoes", label: "Sessões", icon: MessageSquare, enabled: true },
+  { to: "/logs", label: "Logs", icon: ScrollText, enabled: true },
+  { to: "/execucoes", label: "Execuções", icon: ClipboardCheck, enabled: true },
+  { to: "/config", label: "Configurações", icon: Settings, enabled: true },
 ]
 
 export default function Layout() {
