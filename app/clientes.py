@@ -8,6 +8,8 @@ UAZAPI_URL e UAZAPI_TOKEN não ficam aqui — são lidos via get_tokens() em cad
 em webhook.py e midia.py, para que mudanças valham imediatamente.
 """
 import asyncio
+import json
+import logging
 import os
 import threading
 from contextlib import asynccontextmanager
@@ -27,11 +29,15 @@ from openai import AsyncOpenAI
 from app.config import get_tokens, redis_client  # fonte única do Redis
 
 load_dotenv()
+logger = logging.getLogger(__name__)
 
-# Variáveis de infraestrutura (URLs internas do compose ou arquivos — não vão pro painel)
+# Variáveis de infraestrutura (URLs internas do compose — não vão pro painel)
 POSTGRES_CONN         = os.getenv("POSTGRES_CONN")
-GOOGLE_CALENDAR_ID    = os.getenv("GOOGLE_CALENDAR_ID")
-GOOGLE_CALENDAR_CREDS = os.getenv("GOOGLE_CALENDAR_CREDS")
+# Google Calendar: id e credenciais agora vêm do painel (config:tokens), atualizados em
+# refresh_clients(). Os env vars abaixo são só fallback inicial no boot.
+GOOGLE_CALENDAR_ID    = os.getenv("GOOGLE_CALENDAR_ID", "")
+GOOGLE_CALENDAR_CREDS = os.getenv("GOOGLE_CALENDAR_CREDS")  # caminho de arquivo (legado)
+_calendar_info        = None  # dict do JSON da conta de serviço (colado no painel)
 
 # Clientes de IA — None até o lifespan/refresh_clients() inicializá-los
 http_client:   Optional[httpx.AsyncClient]          = None
@@ -109,14 +115,28 @@ def garantir_schema() -> None:
 
 
 def get_calendar_service():
-    """Cria o cliente do Google Calendar uma única vez (thread-safe)."""
+    """Cria o cliente do Google Calendar uma única vez (thread-safe).
+
+    Levanta um erro claro se as credenciais não estiverem configuradas, em vez do
+    críptico "expected str, bytes or os.PathLike object, not NoneType".
+    """
     global _calendar_service
+    scopes = ["https://www.googleapis.com/auth/calendar"]
     with _calendar_lock:
         if _calendar_service is None:
-            creds = service_account.Credentials.from_service_account_file(
-                GOOGLE_CALENDAR_CREDS,
-                scopes=["https://www.googleapis.com/auth/calendar"],
-            )
+            if _calendar_info:  # JSON colado no painel (preferencial)
+                creds = service_account.Credentials.from_service_account_info(
+                    _calendar_info, scopes=scopes
+                )
+            elif GOOGLE_CALENDAR_CREDS and os.path.isfile(GOOGLE_CALENDAR_CREDS):
+                creds = service_account.Credentials.from_service_account_file(
+                    GOOGLE_CALENDAR_CREDS, scopes=scopes
+                )
+            else:
+                raise RuntimeError(
+                    "Google Calendar não configurado: cole o JSON da conta de serviço em "
+                    "Configurações → Google Calendar."
+                )
             _calendar_service = gcal_build(
                 "calendar", "v3", credentials=creds, cache_discovery=False
             )
@@ -154,6 +174,23 @@ async def refresh_clients() -> None:
         )
         genai.configure(api_key=ggl_key)
         _genai_model = genai.GenerativeModel(modelo)
+
+    # Google Calendar: id + JSON da conta de serviço vêm do painel (config:tokens).
+    global GOOGLE_CALENDAR_ID, _calendar_info, _calendar_service
+    cal_id   = (tokens.get("google_calendar_id") or "").strip()
+    cal_json = (tokens.get("google_calendar_json") or "").strip()
+    novo_info = None
+    if cal_json:
+        try:
+            novo_info = json.loads(cal_json)
+        except Exception:
+            logger.warning("google_calendar_json inválido (não é um JSON válido) — ignorado")
+    novo_id = cal_id or GOOGLE_CALENDAR_ID
+    with _calendar_lock:
+        if novo_info != _calendar_info or novo_id != GOOGLE_CALENDAR_ID:
+            _calendar_service = None  # força recriar com as novas credenciais/id
+        _calendar_info = novo_info
+        GOOGLE_CALENDAR_ID = novo_id
 
 
 @asynccontextmanager

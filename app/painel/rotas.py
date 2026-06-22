@@ -47,6 +47,7 @@ _CAMPOS_TOKENS = [
     "uazapi_url", "uazapi_token", "openai_api_key",
     "google_api_key", "supabase_url", "supabase_key",
     "gemini_model", "gemini_model_fallback",
+    "google_calendar_id", "google_calendar_json",
 ]
 
 # Fallback caso a API do Google não responda (lista viva vem de /admin/modelos).

@@ -215,6 +215,11 @@ TOKENS_DEFAULTS = {
     # Modelo Gemini (selecionável no painel) + fallback automático se o principal falhar.
     "gemini_model":          os.getenv("GEMINI_MODEL", "gemini-flash-latest"),
     "gemini_model_fallback": os.getenv("GEMINI_MODEL_FALLBACK", ""),
+    # Google Calendar (agendamento). O JSON é o conteúdo do arquivo da conta de serviço,
+    # colado no painel (sem precisar de arquivo no servidor). ID = e-mail/ID da agenda
+    # compartilhada com a conta de serviço.
+    "google_calendar_id":   os.getenv("GOOGLE_CALENDAR_ID", ""),
+    "google_calendar_json": os.getenv("GOOGLE_CALENDAR_JSON", ""),
 }
 
 

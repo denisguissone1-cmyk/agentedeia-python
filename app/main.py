@@ -68,6 +68,13 @@ async def media_audio(aid: int):
     return Response(content=dados, media_type=mime, headers={"Cache-Control": "private, max-age=3600"})
 
 
+# Painel Jinja legado removido: /admin/* não existe mais (404 explícito, antes do SPA).
+@app.api_route("/admin", methods=["GET", "POST"], include_in_schema=False)
+@app.api_route("/admin/{rest:path}", methods=["GET", "POST"], include_in_schema=False)
+async def admin_removido(rest: str = ""):
+    return Response(status_code=404)
+
+
 # ── SPA React (servido em produção; em dev usa-se `npm run dev` com proxy) ───────
 if os.path.isdir(_DIST):
     app.mount("/assets", StaticFiles(directory=os.path.join(_DIST, "assets")), name="assets")

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import {
   Select,
   SelectContent,
@@ -188,6 +189,39 @@ export default function Config() {
                 <Input type={type} autoComplete="off" value={t[k] ?? ""} onChange={(e) => setTField(k, e.target.value)} />
               </div>
             ))}
+
+            <div className="border-t pt-4">
+              <p className="text-xs font-semibold text-muted-foreground">Google Calendar (agendamento)</p>
+            </div>
+            <div className="grid gap-2">
+              <Label>ID da agenda</Label>
+              <p className="text-xs text-muted-foreground">
+                E-mail/ID da agenda compartilhada com a conta de serviço (ex.: …@group.calendar.google.com).
+              </p>
+              <Input
+                autoComplete="off"
+                placeholder="seuid@group.calendar.google.com"
+                value={t.google_calendar_id ?? ""}
+                onChange={(e) => setTField("google_calendar_id", e.target.value)}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label>Credenciais (JSON da conta de serviço)</Label>
+              <p className="text-xs text-muted-foreground">
+                Cole aqui o conteúdo do arquivo JSON da conta de serviço do Google. Fica guardado com os
+                outros tokens — sem precisar de arquivo no servidor.
+              </p>
+              <Textarea
+                autoComplete="off"
+                spellCheck={false}
+                rows={5}
+                placeholder='{ "type": "service_account", "project_id": "...", ... }'
+                className="font-mono text-xs"
+                value={t.google_calendar_json ?? ""}
+                onChange={(e) => setTField("google_calendar_json", e.target.value)}
+              />
+            </div>
+
             <div className="flex justify-end">
               <Button onClick={salvarTokens}>Salvar e recarregar</Button>
             </div>
