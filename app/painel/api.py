@@ -12,7 +12,7 @@ from pydantic import BaseModel
 from app import presets, produtos
 from app.config import get_config, get_tokens, redis_client, set_config, set_tokens
 from app.memoria import resetar_todo_historico
-from app.painel import rotas as R  # reutiliza helpers do painel Jinja
+from app.painel import helpers as R  # helpers puros (Redis/Postgres/Gemini, formatação)
 from app.painel.auth import PAINEL_PASS_HASH, PAINEL_USER, conferir, logado
 
 router = APIRouter(prefix="/api")

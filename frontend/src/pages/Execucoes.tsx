@@ -51,13 +51,15 @@ export default function Execucoes() {
             {execs.map((ex) => (
               <AccordionItem key={ex.req_id} value={ex.req_id} className="border-b last:border-0">
                 <AccordionTrigger className="px-3 hover:no-underline">
-                  <div className="flex flex-1 items-center gap-3 pr-3 text-left">
+                  <div className="flex flex-1 flex-wrap items-center gap-x-3 gap-y-1 pr-3 text-left">
                     <Badge className={cn("font-medium hover:opacity-100", STATUS[ex.status] ?? "bg-muted")}>
                       {ex.status}
                     </Badge>
                     <span className="font-mono text-xs text-muted-foreground">{ex.numero}</span>
-                    <span className="min-w-0 flex-1 truncate text-sm text-foreground/80">{ex.resumo}</span>
-                    <span className="text-xs text-muted-foreground">{ex.hora}</span>
+                    <span className="ml-auto text-xs text-muted-foreground sm:order-last sm:ml-0">{ex.hora}</span>
+                    <span className="order-last w-full min-w-0 truncate text-sm text-foreground/80 sm:order-none sm:w-auto sm:flex-1">
+                      {ex.resumo}
+                    </span>
                   </div>
                 </AccordionTrigger>
                 <AccordionContent>

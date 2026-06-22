@@ -1,5 +1,12 @@
 # Painel Admin + Modularização do Agente WhatsApp — Implementation Plan
 
+> **⚠️ Documento histórico (substituído).** Este plano descreve a construção original de um
+> painel Jinja em `/admin`. Esse painel foi entregue e, depois, **substituído por um SPA
+> React** (`frontend/`) servido na raiz `/` e consumindo a API JSON em `/api/*`. Os templates
+> Jinja e as rotas `/admin/*` (incluindo os blocos de código abaixo) **não existem mais** —
+> este arquivo permanece só como registro de implementação. Para a arquitetura atual, veja
+> `AGENTS.md`.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Transformar o monólito `agente_whatsapp (1).py` num pacote `app/` modular com um painel web `/admin` (login usuário+senha) que configura o agente ao vivo via Redis e mostra cada conversa separada, empacotado em Docker para deploy numa VPS.

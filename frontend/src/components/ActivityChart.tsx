@@ -59,7 +59,7 @@ export function ActivityChart() {
           Mensagens atendidas e agendamentos por dia — últimos {dias} dias
           {total === 0 && " (sem dados ainda; popula conforme as conversas acontecem)"}
         </CardDescription>
-        <CardAction className="flex flex-wrap items-center gap-2">
+        <CardAction className="col-start-1 row-span-1 row-start-3 mt-3 flex flex-wrap items-center gap-2 justify-self-start sm:col-start-2 sm:row-span-2 sm:row-start-1 sm:mt-0 sm:justify-self-end">
           <ToggleGroup
             type="single"
             value={[7, 30, 90].includes(dias) ? String(dias) : ""}

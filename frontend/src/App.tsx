@@ -12,6 +12,7 @@ import Sessoes from "@/pages/Sessoes"
 import Logs from "@/pages/Logs"
 import Execucoes from "@/pages/Execucoes"
 import Config from "@/pages/Config"
+import NotFound from "@/pages/NotFound"
 
 function Guard({ children }: { children: ReactNode }) {
   const [state, setState] = useState<"loading" | "ok" | "no">("loading")
@@ -41,6 +42,7 @@ export default function App() {
           </Guard>
         }
       >
+        <Route index element={<Navigate to="/geral" replace />} />
         <Route path="/geral" element={<Geral />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/tools" element={<Tools />} />
@@ -51,7 +53,7 @@ export default function App() {
         <Route path="/logs" element={<Logs />} />
         <Route path="/execucoes" element={<Execucoes />} />
         <Route path="/config" element={<Config />} />
-        <Route path="*" element={<Navigate to="/geral" replace />} />
+        <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>
   )

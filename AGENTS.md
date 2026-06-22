@@ -7,8 +7,9 @@ domínio. Para criar um agente novo você só escreve o prompt e liga/cria as to
 
 ## Arquitetura
 
-FastAPI único serve o agente (`/webhook`) e o painel (`/admin`). Estado e config no
-Redis; memória das conversas no Postgres; agenda no Google Calendar.
+FastAPI único serve o agente (`/webhook`), a API do painel (`/api/*`) e o SPA React
+(`frontend/`, servido na raiz `/`). Estado e config no Redis; memória das conversas no
+Postgres; agenda no Google Calendar.
 
 | Módulo | Responsabilidade |
 |--------|------------------|
@@ -21,7 +22,7 @@ Redis; memória das conversas no Postgres; agenda no Google Calendar.
 | `app/tools/` | Uma tool por arquivo + registry |
 | `app/agente.py` | Monta o agente LangChain |
 | `app/webhook.py` | Orquestração + envio de mensagens |
-| `app/painel/` | Login, configurações, sessões |
+| `app/painel/` | API JSON do painel (`api.py`), auth e helpers — consumida pelo SPA React |
 
 ## Config ao vivo
 
@@ -35,7 +36,7 @@ sobre os defaults — então editar os defaults só afeta deploys novos (Redis v
 O default já vem **genérico e sem tools** (só `cadastrar` ligada — captura de nome,
 útil em qualquer agente). Para um agente novo:
 
-1. **Prompt**: edite o System Prompt em `/admin/config` (ou ajuste `SYSTEM_PROMPT_DEFAULT`
+1. **Prompt**: edite o System Prompt na tela **Prompt** do painel (ou ajuste `SYSTEM_PROMPT_DEFAULT`
    em `app/config.py` para um deploy novo). Variáveis disponíveis: `{status_contato}`,
    `{nome_contato}`, `{data_hora}`, `{numero}`.
 2. **Tools**: ligue as que precisar no painel, ou crie novas (abaixo). As tools de exemplo
@@ -55,8 +56,8 @@ todos herdam no próximo build. Sem branch por nicho, sem divergência.
   dict `PRESET` com `nome_agente`, `nome_marca`, `system_prompt`, `tools_descricao`,
   `tools_ativas`. O prompt pode usar `{nome_agente}` e `{nome_marca}` para a mesma base
   servir vários clientes do nicho.
-- **Aplicar pelo painel**: `/admin/config` → card *Base do agente (preset)* → escolher e
-  *Aplicar base*. Sobrescreve prompt, tools e marca na config (Redis).
+- **Aplicar pelo painel**: tela **Painel Geral** → card *Base ativa do agente* → escolher e
+  *Ativar base*. Sobrescreve prompt, tools e marca na config (Redis).
 - **Aplicar no deploy (zero-toque)**: suba com a env `AGENTE_PRESET=advogado`. No 1º boot,
   se o Redis ainda não tem config, o preset é semeado automaticamente (`semear_preset_se_vazio`).
 - **Criar uma base nova**: copie `app/presets/advogado.py`, renomeie (`fisioterapia.py`,
@@ -67,7 +68,7 @@ um cliente fica, por exemplo, *fisioterapia rodando motor v1.2*.
 
 ## Painel Geral
 
-Tela `/admin/geral` (item no menu) é a central de controle da instância:
+A tela **Painel Geral** (item no menu) é a central de controle da instância:
 
 - **Base ativa**: rádio com todos os presets — só **uma** ativa por vez. Ativar uma chama
   `set_config(preset)` e grava `preset_ativo`; as outras ficam desmarcadas. A base ativa
@@ -119,8 +120,8 @@ inválido de uma tool não derruba o resto nem o boot.
 
 1. Em `app/config.py`: adicione a chave em `DEFAULTS` e, se numérico, a faixa em `_FAIXAS`.
 2. Use onde precisar via `(await get_config())["minha_chave"]`.
-3. Em `app/painel/templates/config.html`: adicione o campo no formulário.
-4. Se for `int`, inclua o nome em `_CAMPOS_INT` dentro de `app/painel/rotas.py`.
+3. No SPA, adicione o campo em `frontend/src/pages/Config.tsx` (lê/escreve via `/api/config`).
+4. Se for `int`, inclua o nome em `_CAMPOS_INT` dentro de `app/painel/helpers.py`.
 
 ## Rodar testes
 

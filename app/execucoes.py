@@ -2,7 +2,7 @@
 e exatamente onde parou / falhou.
 
 Cada mensagem processada vira uma "execução" com uma lista de passos. O registro
-é gravado no Redis (lista curta) ao final, e o painel lê em /admin/execucoes.
+é gravado no Redis (lista curta) ao final, e o painel lê na tela Execuções.
 Nunca levanta exceção — observabilidade não pode derrubar o atendimento.
 """
 import json

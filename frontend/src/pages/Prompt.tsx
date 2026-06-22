@@ -39,12 +39,12 @@ export default function Prompt() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-base font-semibold tracking-tight">Personalidade &amp; instruções</h2>
           <p className="mt-1 text-sm text-muted-foreground">Quem o agente é e quando usa cada ferramenta.</p>
         </div>
-        <Button onClick={salvar} disabled={saving}>
+        <Button onClick={salvar} disabled={saving} className="w-full sm:w-auto">
           {saving ? "Salvando…" : "Salvar"}
         </Button>
       </div>

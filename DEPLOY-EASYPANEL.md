@@ -15,7 +15,7 @@ de uma vez.
 2. No projeto, use **Create from Schema** e cole o conteúdo de `easypanel-schema.json`.
 3. O `app` e o `worker` usam a **imagem pronta** `ghcr.io/denisguissone1-cmyk/agentedeia-python:latest`
    (buildada pelo GitHub Action — veja abaixo). O EasyPanel só baixa e roda.
-4. Acesse o painel pelo domínio gerado do serviço **app** → `/admin`.
+4. Acesse o painel pelo domínio gerado do serviço **app** (raiz `/`).
 
 > Formato que funciona: raiz `{ "services": [ … ] }`. Colar um array `[…]` dá *"Expected
 > object, received array"*. No serviço `postgres` **não** inclua `username` (não é campo
@@ -83,9 +83,9 @@ para quando você não estiver na sua máquina.
    ```bash
    python -c "import hashlib;print(hashlib.sha256(b'SUA_NOVA_SENHA').hexdigest())"
    ```
-2. **Preencha os tokens** em `/admin/config`: Google Gemini (obrigatório p/ a IA),
-   UAZAPI (URL + token), OpenAI (áudio/imagem). Aplicam na hora, sem restart.
-3. **Registre o webhook**: em `/admin/config → Webhook`, clique em *Registrar na UAZAPI*
+2. **Preencha os tokens** na tela **Configurações** do painel: Google Gemini (obrigatório
+   p/ a IA), UAZAPI (URL + token), OpenAI (áudio/imagem). Aplicam na hora, sem restart.
+3. **Registre o webhook**: em **Configurações → Webhook**, clique em *Registrar na UAZAPI*
    (ou copie a URL e cole na sua instância).
 4. (Opcional) Google Calendar: para as tools de agenda, adicione as envs
    `GOOGLE_CALENDAR_ID` e `GOOGLE_CALENDAR_CREDS` (caminho de um arquivo de service account

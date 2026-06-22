@@ -64,12 +64,14 @@ function ExecSheet({ numero }: { numero: string }) {
           ) : (
             execs.map((ex) => (
               <div key={ex.req_id} className="rounded-lg border p-3">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                   <Badge className={cn("font-medium hover:opacity-100", STATUS[ex.status] ?? "bg-muted")}>
                     {ex.status}
                   </Badge>
-                  <span className="min-w-0 flex-1 truncate text-sm text-foreground/80">{ex.resumo}</span>
-                  <span className="text-xs text-muted-foreground">{ex.hora}</span>
+                  <span className="ml-auto text-xs text-muted-foreground sm:order-last sm:ml-0">{ex.hora}</span>
+                  <span className="order-last w-full min-w-0 truncate text-sm text-foreground/80 sm:order-none sm:w-auto sm:flex-1">
+                    {ex.resumo}
+                  </span>
                 </div>
                 <ol className="ml-2 mt-3 space-y-2 border-l pl-4">
                   {ex.passos.map((p, i) => {

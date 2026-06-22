@@ -148,14 +148,14 @@ export default function Produtos() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="text-base font-semibold tracking-tight">Produtos</h2>
           <p className="mt-1 text-sm text-muted-foreground">
             Catálogo que o agente consulta e cujas fotos ele envia. Só os <b>ativos</b> aparecem para o cliente.
           </p>
         </div>
-        <Button onClick={abrirNovo}>
+        <Button onClick={abrirNovo} className="w-full sm:w-auto">
           <Plus className="size-4" /> Adicionar produto
         </Button>
       </div>

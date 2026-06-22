@@ -1,7 +1,13 @@
 # Painel Admin + Modularização do Agente WhatsApp (Elizabeth)
 
 **Data:** 2026-06-15
-**Status:** Aprovado (aguardando revisão final do spec)
+**Status:** Histórico — substituído (ver aviso abaixo)
+
+> **⚠️ Documento histórico (substituído).** O painel Jinja em `/admin` descrito aqui foi
+> entregue e, depois, **substituído por um SPA React** (`frontend/`) servido na raiz `/` e
+> consumindo a API JSON em `/api/*`. Os templates Jinja e as rotas `/admin/*` **não existem
+> mais**. Este texto fica apenas como registro do design original — não use as rotas/telas
+> citadas como referência do sistema atual.
 
 ## Contexto
 

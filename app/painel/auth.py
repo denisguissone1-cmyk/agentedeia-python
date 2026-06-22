@@ -8,7 +8,6 @@ import hmac
 import os
 
 from fastapi import Request
-from fastapi.responses import RedirectResponse
 
 PAINEL_USER      = os.getenv("PAINEL_USER", "admin")
 PAINEL_PASS_HASH = os.getenv("PAINEL_PASS_HASH", "")
@@ -26,10 +25,3 @@ def conferir(usuario_in: str, senha_in: str, *, usuario=None, senha_hash=None) -
 
 def logado(request: Request) -> bool:
     return bool(request.session.get("user"))
-
-
-def exigir_login(request: Request):
-    """Use como dependência; retorna RedirectResponse se não logado, senão None."""
-    if not logado(request):
-        return RedirectResponse("/admin/login", status_code=302)
-    return None

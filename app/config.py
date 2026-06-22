@@ -14,7 +14,7 @@ redis_client = aioredis.from_url(REDIS_URL, decode_responses=False)
 CONFIG_KEY = "config:agente"
 
 # System prompt PADRÃO genérico. Este é o template-base: um assistente neutro, sem
-# domínio. Cada agente novo sobrescreve isto pelo painel (/admin/config) ou aplicando
+# domínio. Cada agente novo sobrescreve isto pelo painel (tela Prompt) ou aplicando
 # um preset; a config salva no Redis tem precedência sobre este default.
 # Bases prontas por nicho: app/presets/ (ex.: app/presets/advogado.py).
 SYSTEM_PROMPT_DEFAULT = """# PAPEL
@@ -90,7 +90,7 @@ TOOLS_ATIVAS_DEFAULT = {
 }
 
 DEFAULTS = {
-    # Identidade/marca exibida no painel (editável em /admin/config).
+    # Identidade/marca exibida no painel (editável em Configurações).
     "nome_agente": "Agente",
     "nome_marca": "Agente IA",
     # Base (preset) atualmente ativa — vazio = config personalizada (nenhum preset aplicado).
