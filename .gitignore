@@ -15,5 +15,10 @@ htmlcov/
 node_modules/
 frontend/dist/
 
-# segredo local — nunca commitar
+# segredos locais — nunca commitar
 pat.txt
+client_secret*.json
+*credentials*.json
+*service-account*.json
+scripts_seed_dev.py
+test_*.py

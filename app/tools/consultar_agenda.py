@@ -2,13 +2,17 @@ import json
 
 from langchain.tools import tool
 
-from app.tools.base import asyncio, get_calendar_id, get_calendar_service, proteger_agenda
+from app.tools.base import (
+    asyncio, get_calendar_id, get_calendar_service, preparar_agenda, proteger_agenda,
+)
 
 
 def criar(descricao: str):
     @tool("consultar_agenda", description=descricao)
     @proteger_agenda("consultar_agenda")
     async def consultar_agenda(after: str, before: str) -> str:
+        await preparar_agenda()
+
         def _consultar():
             service = get_calendar_service()
             result = service.events().list(

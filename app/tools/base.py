@@ -14,6 +14,12 @@ def get_calendar_id() -> str:
     chamada para refletir mudanças sem restart. 'primary' como último recurso."""
     return clientes.GOOGLE_CALENDAR_ID or "primary"
 
+
+async def preparar_agenda() -> None:
+    """Relê as credenciais/id do Calendar do Redis antes de usar a agenda. Faz o worker
+    pegar o que foi salvo no painel mesmo sem reiniciar o processo."""
+    await clientes.garantir_calendar_atualizado()
+
 # Mensagem que a tool devolve ao agente quando a agenda falha. O agente lê isso como
 # resultado da ferramenta e responde com naturalidade, sem vazar erro técnico pro cliente.
 ERRO_AGENDA = (
@@ -38,4 +44,5 @@ def proteger_agenda(nome: str):
     return wrap
 
 
-__all__ = ["asyncio", "get_calendar_id", "get_calendar_service", "ERRO_AGENDA", "proteger_agenda"]
+__all__ = ["asyncio", "get_calendar_id", "get_calendar_service", "preparar_agenda",
+           "ERRO_AGENDA", "proteger_agenda"]

@@ -176,6 +176,11 @@ async def refresh_clients() -> None:
         _genai_model = genai.GenerativeModel(modelo)
 
     # Google Calendar: id + JSON da conta de serviço vêm do painel (config:tokens).
+    _aplicar_calendar_tokens(tokens)
+
+
+def _aplicar_calendar_tokens(tokens: dict) -> None:
+    """Atualiza id/credenciais do Calendar a partir dos tokens. Reseta o serviço se mudou."""
     global GOOGLE_CALENDAR_ID, _calendar_info, _calendar_service
     cal_id   = (tokens.get("google_calendar_id") or "").strip()
     cal_json = (tokens.get("google_calendar_json") or "").strip()
@@ -191,6 +196,12 @@ async def refresh_clients() -> None:
             _calendar_service = None  # força recriar com as novas credenciais/id
         _calendar_info = novo_info
         GOOGLE_CALENDAR_ID = novo_id
+
+
+async def garantir_calendar_atualizado() -> None:
+    """Relê id+JSON do Calendar do Redis. As tools de agenda chamam isto antes de usar,
+    para o worker pegar mudanças feitas no painel SEM precisar reiniciar o processo."""
+    _aplicar_calendar_tokens(await get_tokens())
 
 
 @asynccontextmanager

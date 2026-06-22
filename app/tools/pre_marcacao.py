@@ -1,13 +1,17 @@
 from langchain.tools import tool
 
 from app import eventos
-from app.tools.base import asyncio, get_calendar_id, get_calendar_service, proteger_agenda
+from app.tools.base import (
+    asyncio, get_calendar_id, get_calendar_service, preparar_agenda, proteger_agenda,
+)
 
 
 def criar(number: str, descricao: str):
     @tool("pre_marcacao", description=descricao)
     @proteger_agenda("pre_marcacao")
     async def pre_marcacao(start: str, end: str, summary: str, description: str) -> str:
+        await preparar_agenda()
+
         def _criar():
             service = get_calendar_service()
             evento = {

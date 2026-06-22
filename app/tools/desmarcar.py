@@ -1,12 +1,16 @@
 from langchain.tools import tool
 
-from app.tools.base import asyncio, get_calendar_id, get_calendar_service, proteger_agenda
+from app.tools.base import (
+    asyncio, get_calendar_id, get_calendar_service, preparar_agenda, proteger_agenda,
+)
 
 
 def criar(descricao: str):
     @tool("desmarcar", description=descricao)
     @proteger_agenda("desmarcar")
     async def desmarcar(event_id: str) -> str:
+        await preparar_agenda()
+
         def _deletar():
             service = get_calendar_service()
             service.events().delete(
