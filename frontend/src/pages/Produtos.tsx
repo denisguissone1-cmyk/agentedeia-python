@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react"
-import { Plus, Trash2, ImagePlus, X, Pencil, Package } from "lucide-react"
+import { Plus, Trash2, ImagePlus, Link, X, Pencil, Package } from "lucide-react"
 import { toast } from "sonner"
 import { api, post } from "@/lib/api"
 import { Button } from "@/components/ui/button"
@@ -45,6 +45,9 @@ export default function Produtos() {
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState<typeof vazio>(vazio)
   const [saving, setSaving] = useState(false)
+  const [produtoImportacao, setProdutoImportacao] = useState<Produto | null>(null)
+  const [urlsFotos, setUrlsFotos] = useState("")
+  const [importando, setImportando] = useState(false)
   const fileRefs = useRef<Record<number, HTMLInputElement | null>>({})
 
   const carregar = () =>
@@ -146,6 +149,27 @@ export default function Produtos() {
     }
   }
 
+  const importarPorUrl = async () => {
+    if (!produtoImportacao) return
+    const urls = urlsFotos.split(/\r?\n/).map((url) => url.trim()).filter(Boolean)
+    if (!urls.length) {
+      toast.error("Cole pelo menos uma URL de imagem")
+      return
+    }
+    setImportando(true)
+    try {
+      await post(`/produtos/${produtoImportacao.id}/fotos/importar`, { urls })
+      await carregar()
+      setProdutoImportacao(null)
+      setUrlsFotos("")
+      toast.success(`${urls.length} foto(s) importada(s) para o catálogo`)
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Falha ao importar as fotos")
+    } finally {
+      setImportando(false)
+    }
+  }
+
   return (
     <div className="space-y-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -219,6 +243,16 @@ export default function Produtos() {
                     title="Adicionar fotos"
                   >
                     <ImagePlus className="size-5" />
+                  </button>
+                  <button
+                    onClick={() => {
+                      setProdutoImportacao(p)
+                      setUrlsFotos("")
+                    }}
+                    className="grid size-16 place-items-center rounded-md border border-dashed text-muted-foreground transition hover:border-primary hover:text-primary"
+                    title="Importar fotos por URL"
+                  >
+                    <Link className="size-5" />
                   </button>
                   <input
                     ref={(el) => {
@@ -321,6 +355,43 @@ export default function Produtos() {
             </Button>
             <Button onClick={salvar} disabled={saving}>
               {saving ? "Salvando…" : "Salvar"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={produtoImportacao !== null}
+        onOpenChange={(aberto) => {
+          if (!aberto && !importando) setProdutoImportacao(null)
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Importar fotos por URL</DialogTitle>
+            <DialogDescription>
+              {produtoImportacao?.nome}. Cole um link direto de imagem por linha. O servidor
+              baixa cada arquivo e, com o GCS configurado, salva uma cópia no seu bucket.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-2">
+            <Label htmlFor="urls-fotos">Links das imagens</Label>
+            <Textarea
+              id="urls-fotos"
+              autoFocus
+              placeholder={"https://exemplo.com/carro-frente.jpg\nhttps://exemplo.com/carro-interior.jpg"}
+              className="min-h-[150px] font-mono text-xs"
+              value={urlsFotos}
+              onChange={(e) => setUrlsFotos(e.target.value)}
+            />
+            <p className="text-xs text-muted-foreground">Até 10 imagens, com no máximo 12 MB cada.</p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setProdutoImportacao(null)} disabled={importando}>
+              Cancelar
+            </Button>
+            <Button onClick={importarPorUrl} disabled={importando}>
+              {importando ? "Importando…" : "Importar fotos"}
             </Button>
           </DialogFooter>
         </DialogContent>

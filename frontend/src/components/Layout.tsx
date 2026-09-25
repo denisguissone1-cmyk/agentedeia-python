@@ -12,9 +12,11 @@ import {
   Package,
   LogOut,
   ChevronsUpDown,
+  Bell,
   type LucideIcon,
 } from "lucide-react"
 import { api, post } from "@/lib/api"
+import { notifIcone, notifCor } from "@/lib/icons"
 import {
   Sidebar,
   SidebarContent,
@@ -47,8 +49,10 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Separator } from "@/components/ui/separator"
+import { Button } from "@/components/ui/button"
 
 type NavItem = { to: string; label: string; icon: LucideIcon }
+type Notif = { id: string; titulo: string; texto: string; tipo: string; numero: string | null; quando: string }
 
 const NAV: NavItem[] = [
   { to: "/geral", label: "Painel Geral", icon: SlidersHorizontal },
@@ -64,12 +68,47 @@ const NAV: NavItem[] = [
 
 export default function Layout() {
   const [marca, setMarca] = useState({ nome_agente: "Agente", nome_marca: "Agente IA" })
+  const [notifs, setNotifs] = useState<Notif[]>([])
+  const [naoLidas, setNaoLidas] = useState(0)
   const nav = useNavigate()
   const loc = useLocation()
 
   useEffect(() => {
-    api<{ nome_agente: string; nome_marca: string }>("/marca").then(setMarca).catch(() => {})
+    const carregarMarca = () =>
+      api<{ nome_agente: string; nome_marca: string }>("/marca").then(setMarca).catch(() => {})
+    carregarMarca()
+    window.addEventListener("marca-atualizada", carregarMarca)
+    return () => window.removeEventListener("marca-atualizada", carregarMarca)
   }, [])
+
+  useEffect(() => {
+    const carregarNotifs = () =>
+      api<{ notificacoes: Notif[]; nao_lidas: number }>("/notificacoes")
+        .then((d) => {
+          setNotifs(d.notificacoes)
+          setNaoLidas(d.nao_lidas)
+        })
+        .catch(() => {})
+    carregarNotifs()
+
+    const es = new EventSource("/api/logs/stream")
+    es.onmessage = (ev) => {
+      try {
+        const dados = JSON.parse(ev.data)
+        if (dados?.filtro === "notificacao") carregarNotifs()
+      } catch {
+        // ignora linhas que não são JSON (ex.: comentário de keep-alive)
+      }
+    }
+    return () => es.close()
+  }, [])
+
+  const abrirNotificacoes = (open: boolean) => {
+    if (open && naoLidas > 0) {
+      setNaoLidas(0)
+      post("/notificacoes/lidas").catch(() => {})
+    }
+  }
 
   const logout = async () => {
     await post("/logout").catch(() => {})
@@ -161,6 +200,51 @@ export default function Layout() {
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
+          </div>
+
+          <div className="ml-auto flex items-center px-4">
+            <DropdownMenu onOpenChange={abrirNotificacoes}>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="relative">
+                  <Bell className="size-4" />
+                  {naoLidas > 0 && (
+                    <span className="absolute right-1 top-1 grid size-4 place-items-center rounded-full bg-destructive text-[10px] font-bold leading-none text-white">
+                      {naoLidas > 9 ? "9+" : naoLidas}
+                    </span>
+                  )}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-80">
+                <DropdownMenuLabel className="text-xs text-muted-foreground">Notificações</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                {notifs.length === 0 && (
+                  <div className="px-2 py-4 text-center text-sm text-muted-foreground">
+                    Sem notificações
+                  </div>
+                )}
+                {notifs.slice(0, 10).map((n) => {
+                  const Icon = notifIcone(n.tipo)
+                  return (
+                    <DropdownMenuItem
+                      key={n.id}
+                      className="items-start gap-2.5 whitespace-normal"
+                      onClick={() => n.numero && nav("/sessoes")}
+                    >
+                      <span className={`grid size-7 flex-none place-items-center rounded-md ${notifCor(n.tipo)}`}>
+                        <Icon className="size-3.5" />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="flex items-center justify-between gap-2">
+                          <span className="truncate text-sm font-medium">{n.titulo}</span>
+                          <span className="flex-none text-xs text-muted-foreground">{n.quando}</span>
+                        </span>
+                        <span className="line-clamp-2 block text-xs text-muted-foreground">{n.texto}</span>
+                      </span>
+                    </DropdownMenuItem>
+                  )
+                })}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </header>
         <div className="flex-1 overflow-auto p-4 md:p-6">

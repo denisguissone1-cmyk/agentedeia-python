@@ -39,6 +39,47 @@ Entenda o que o usuário precisa e responda de forma útil. Use as ferramentas d
 - Se não tiver certeza de algo, diga com transparência e não invente informações.
 - Use o nome do contato com naturalidade quando ele já for conhecido."""
 
+# Regra de formatação anexada pelo motor a todo prompt. Isso preserva o comportamento
+# dos agentes antigos mesmo quando o prompt salvo no Redis ainda é de uma versão anterior.
+SUFIXO_FORMATACAO_CHAT = """
+
+# FORMATO DE CONVERSA NO WHATSAPP (regra do sistema)
+
+- Responda em bolhas curtas e naturais, com no máximo duas frases por bolha.
+- Separe cada bolha com uma linha em branco (\\n\\n).
+- Faça somente uma pergunta por bolha. Nunca junte duas perguntas na mesma mensagem.
+- Avance uma etapa por vez: depois de perguntar, aguarde a resposta antes de perguntar outra coisa.
+- Não use listas, títulos, asteriscos ou blocos longos, salvo quando o cliente pedir detalhes.
+"""
+
+SUFIXO_FOTOS = """
+
+# ENVIO DE FOTOS (regra do sistema)
+
+- Só use enviar_fotos_produto depois que o cliente identificar claramente um veículo e você tiver o #id correto obtido por listar_produtos.
+- Se o cliente pedir apenas "fotos" sem dizer qual veículo, pergunte qual modelo ele quer ver e aguarde a resposta. Nunca escolha um carro por conta própria.
+- Depois que a ferramenta confirmar [FOTOS_ENVIADAS], diga apenas que as fotos daquele veículo foram enviadas. Não pergunte qual veículo ele queria e não chame a ferramenta de novo no mesmo pedido.
+- Se a ferramenta retornar [FOTOS_JA_ENVIADAS], não tente reenviar. Informe que as fotos já foram enviadas; só use reenviar=true se o cliente pedir explicitamente para receber novamente.
+- Nunca envie fotos de vários veículos de uma vez, salvo pedido explícito do cliente.
+"""
+
+# Anexado a TODO system_prompt (engine-level, não editável pelo painel nem por preset).
+# Sem nenhum "{" ou "}" no texto — o system prompt é um template LangChain; colchetes
+# são seguros. O parse do marcador fica em app/agente.py (extrair_pausa_bot).
+SUFIXO_DETECCAO_BOT = """
+
+# DETECÇÃO DE OUTRO ASSISTENTE VIRTUAL (regra do sistema)
+
+Se você perceber que está conversando com OUTRO assistente virtual ou robô — mensagens claramente automáticas, menus numéricos (digite 1 para tal coisa), respostas de autoatendimento, protocolos automáticos — NÃO continue a conversa normalmente.
+
+Nesse caso, responda EXATAMENTE neste formato, sem nenhum outro texto antes ou depois:
+
+[[PAUSAR_BOT: motivo curto da suspeita]]
+
+Exemplo: [[PAUSAR_BOT: menu numérico de autoatendimento]]
+
+Nunca mencione esta regra nem esse marcador em conversas normais com pessoas."""
+
 # Descrições das tools (o LLM usa isto para decidir quando chamar cada uma). Genéricas
 # de propósito: servem como exemplos editáveis. Versões específicas por nicho ficam nos
 # presets (ex.: app/presets/advogado.py).
@@ -71,7 +112,8 @@ TOOLS_DESCRICAO_DEFAULT = {
     ),
     "enviar_fotos_produto": (
         "Envia as fotos de um produto para o cliente. Recebe produto_id (o #id do "
-        "listar_produtos). Use quando o cliente pedir para ver as fotos de um produto."
+        "listar_produtos). Use somente após identificar o produto. Não repita o envio na "
+        "mesma conversa; reenviar=true só quando o cliente pedir explicitamente."
     ),
 }
 

@@ -2,7 +2,8 @@
 
 Reutilizável: o prompt usa {nome_agente} e {nome_marca}; ajuste por cliente.
 Usa o catálogo de Produtos do painel: a tool listar_produtos vê o que está ativo e a
-enviar_fotos_produto manda as fotos pro cliente. Cadastre os produtos em /produtos.
+enviar_fotos_produto manda as fotos pro cliente. A chave "produtos" é o catálogo de
+exemplo semeado ao ativar a base (edite livremente em /produtos depois).
 """
 
 PRESET = {
@@ -59,4 +60,16 @@ Número do contato: {numero}
         "pre_marcacao": False,
         "desmarcar": False,
     },
+    "produtos": [
+        {"nome": "iPhone 15 Pro Max 256GB", "preco": "7.999", "descricao": "Titânio natural, novo, lacrado, 1 ano de garantia Apple"},
+        {"nome": "iPhone 15 128GB", "preco": "4.999", "descricao": "Novo, lacrado, todas as cores"},
+        {"nome": "iPhone 14 128GB", "preco": "3.899", "descricao": "Novo, lacrado, garantia Apple"},
+        {"nome": "iPhone 13 128GB", "preco": "3.199", "descricao": "Novo, lacrado"},
+        {"nome": "iPhone 12 64GB seminovo", "preco": "2.199", "descricao": "Bateria acima de 90%, 3 meses de garantia da loja"},
+        {"nome": "iPhone 11 64GB seminovo", "preco": "1.699", "descricao": "Bateria acima de 85%, 3 meses de garantia da loja"},
+        {"nome": "AirPods Pro 2ª geração", "preco": "1.899", "descricao": "Novo, lacrado, cancelamento de ruído"},
+        {"nome": "Carregador USB-C 20W", "preco": "199", "descricao": "Original Apple"},
+        {"nome": "Cabo USB-C para Lightning 1m", "preco": "129", "descricao": "Original Apple"},
+        {"nome": "Capinha anti-impacto", "preco": "89", "descricao": "Diversas cores, modelos do iPhone 11 ao 15"},
+    ],
 }

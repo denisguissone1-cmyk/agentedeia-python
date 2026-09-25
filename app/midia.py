@@ -3,6 +3,7 @@ import asyncio
 import base64
 import io
 import logging
+import re
 
 from app import clientes
 from app.config import get_tokens
@@ -37,22 +38,83 @@ async def converter_para_mp3(audio_bytes: bytes) -> bytes | None:
 
 async def baixar_midia(id_msg: str) -> bytes:
     tokens = await get_tokens()
+    if not tokens.get("uazapi_url") or not tokens.get("uazapi_token"):
+        raise RuntimeError("UAZAPI_URL/UAZAPI_TOKEN não configurados")
+    if clientes.http_client is None:
+        raise RuntimeError("cliente HTTP ainda não foi inicializado")
     resposta = await clientes.http_client.post(
         f"{tokens['uazapi_url']}/message/download",
         headers={"token": tokens["uazapi_token"]},
         json={"id": id_msg, "return_base64": True},
     )
     resposta.raise_for_status()
-    return base64.b64decode(resposta.json()["base64Data"])
+    payload = resposta.json()
+    dados = payload.get("base64Data") or payload.get("base64")
+    if not dados and isinstance(payload.get("data"), dict):
+        dados = payload["data"].get("base64Data") or payload["data"].get("base64")
+    if not dados:
+        raise RuntimeError("UAZAPI não retornou base64Data ao baixar a mídia")
+    if isinstance(dados, str) and dados.startswith("data:") and "," in dados:
+        dados = dados.split(",", 1)[1]
+    try:
+        return base64.b64decode(re.sub(r"\s+", "", dados), validate=True)
+    except Exception as exc:
+        raise RuntimeError("base64 da mídia retornado pela UAZAPI é inválido") from exc
 
 
-async def transcrever_bytes(audio_bytes: bytes) -> str:
+def _mime_audio(mimetype: str | None) -> str:
+    mime = (mimetype or "audio/ogg").split(";", 1)[0].strip().lower()
+    return mime if mime.startswith("audio/") else "audio/ogg"
+
+
+def _nome_audio(mime: str) -> str:
+    extensao = {
+        "audio/ogg": ".ogg", "audio/opus": ".opus", "audio/webm": ".webm",
+        "audio/mp4": ".mp4", "audio/mpeg": ".mp3", "audio/wav": ".wav",
+        "audio/x-wav": ".wav",
+    }.get(mime, ".ogg")
+    return f"audio{extensao}"
+
+
+async def _transcrever_openai(audio_bytes: bytes, mime: str) -> str:
+    if clientes.openai_client is None:
+        raise RuntimeError("OPENAI_API_KEY não configurada")
     transcricao = await clientes.openai_client.audio.transcriptions.create(
         model="whisper-1",
-        file=("audio.ogg", io.BytesIO(audio_bytes), "audio/ogg"),
+        file=(_nome_audio(mime), io.BytesIO(audio_bytes), mime),
         language="pt",
     )
-    return transcricao.text
+    texto = (getattr(transcricao, "text", "") or "").strip()
+    if not texto:
+        raise RuntimeError("Whisper retornou uma transcrição vazia")
+    return texto
+
+
+async def _transcrever_gemini(audio_bytes: bytes, mime: str) -> str:
+    if clientes._genai_model is None:
+        raise RuntimeError("modelo Gemini não configurado para transcrição")
+    resposta = await clientes._genai_model.generate_content_async([
+        "Transcreva este áudio em português do Brasil. Retorne somente o que foi falado, "
+        "sem comentários, rótulos ou explicações.",
+        {"mime_type": mime, "data": audio_bytes},
+    ])
+    texto = (getattr(resposta, "text", "") or "").strip()
+    if not texto:
+        raise RuntimeError("Gemini retornou uma transcrição vazia")
+    return texto
+
+
+async def transcrever_bytes(audio_bytes: bytes, mimetype: str = "audio/ogg") -> str:
+    """Transcreve com Whisper e usa o Gemini como fallback configurado no agente."""
+    mime = _mime_audio(mimetype)
+    erros = []
+    for transcritor in (_transcrever_openai, _transcrever_gemini):
+        try:
+            return await transcritor(audio_bytes, mime)
+        except Exception as exc:
+            erros.append(f"{type(exc).__name__}: {exc}")
+            logger.warning("Falha na transcrição com %s: %s", transcritor.__name__, exc)
+    raise RuntimeError("Não foi possível transcrever o áudio (" + "; ".join(erros) + ")")
 
 
 async def transcrever_audio(id_msg: str) -> str:
@@ -121,7 +183,7 @@ async def processar_conteudo(dados: dict) -> dict:
                     )
             except Exception as exc:
                 logger.warning(f"Falha ao guardar áudio {id_msg}: {exc}")
-            return {"texto": await transcrever_bytes(audio_bytes),
+            return {"texto": await transcrever_bytes(audio_bytes, dados.get("mimetype", "audio/ogg")),
                     "tipo": "AudioMessage", "audio_id": audio_id}
         elif tipo == "ImageMessage":
             texto = await analisar_imagem(id_msg, dados.get("mimetype", "image/jpeg"))

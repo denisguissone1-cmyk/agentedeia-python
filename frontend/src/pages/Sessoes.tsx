@@ -17,7 +17,11 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet"
 
-type Sessao = { numero: string; nome: string | null; mascara: string; status: string }
+type PausaBot = { motivo: string; quando: string }
+type Sessao = {
+  numero: string; nome: string | null; mascara: string; status: string
+  pausa_bot: PausaBot | null
+}
 type Msg = { role: string; ag: boolean; texto: string; tipo?: string; audio_id?: number }
 type Passo = { nome: string; status: string; detalhe: string; hora: string }
 type Exec = { req_id: string; hora: string; status: string; resumo: string; passos: Passo[] }
@@ -129,7 +133,7 @@ function AudioBubble({ m }: { m: Msg }) {
   )
 }
 
-function ChatView({ numero }: { numero: string }) {
+function ChatView({ numero, sessao, onMudou }: { numero: string; sessao?: Sessao; onMudou: () => void }) {
   const [mensagens, setMensagens] = useState<Msg[]>([])
   const [busy, setBusy] = useState(false)
   const fimRef = useRef<HTMLDivElement | null>(null)
@@ -153,12 +157,15 @@ function ChatView({ numero }: { numero: string }) {
     try {
       await post(`/sessoes/${encodeURIComponent(numero)}/${qual}`)
       toast.success(qual === "pausar" ? "Bot pausado nesta conversa" : "Bot reativado")
+      onMudou()
     } catch {
       toast.error("Falha na ação")
     } finally {
       setBusy(false)
     }
   }
+
+  const pausadoPorBot = sessao?.status === "pausado_bot"
 
   return (
     <div className="flex h-full flex-1 flex-col">
@@ -176,6 +183,14 @@ function ChatView({ numero }: { numero: string }) {
         <span className="hidden items-center gap-1.5 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground sm:inline-flex">
           <Eye className="size-3.5" /> somente leitura
         </span>
+        {pausadoPorBot && (
+          <span className="flex min-w-0 items-center gap-1.5">
+            <Badge className="flex-none bg-red-100 text-red-700 hover:bg-red-100">pausado por bot</Badge>
+            <span className="truncate text-xs text-muted-foreground">
+              {sessao?.pausa_bot?.motivo} · {sessao?.pausa_bot?.quando}
+            </span>
+          </span>
+        )}
         <div className="ml-auto flex gap-2">
           <ExecSheet numero={numero} />
           <Button variant="outline" size="sm" disabled={busy} onClick={() => acao("pausar")}>
@@ -224,8 +239,8 @@ export default function Sessoes() {
   const [erro, setErro] = useState("")
   const [busca, setBusca] = useState("")
 
-  useEffect(() => {
-    api<{ sessoes: Sessao[]; erro: string }>("/sessoes")
+  const recarregarSessoes = useCallback(() => {
+    return api<{ sessoes: Sessao[]; erro: string }>("/sessoes")
       .then((d) => {
         setSessoes(d.sessoes)
         setErro(d.erro)
@@ -233,7 +248,12 @@ export default function Sessoes() {
       .catch(() => setErro("Falha ao carregar as conversas"))
   }, [])
 
+  useEffect(() => {
+    recarregarSessoes()
+  }, [recarregarSessoes])
+
   const ativo = numero ? decodeURIComponent(numero) : ""
+  const sessaoAtiva = sessoes.find((s) => s.numero === ativo)
 
   const filtradas = useMemo(() => {
     const q = busca.trim().toLowerCase()
@@ -295,9 +315,13 @@ export default function Sessoes() {
                 <span
                   className={cn(
                     "size-2 flex-none rounded-full",
-                    s.status === "ativo" ? "bg-emerald-500" : "bg-muted-foreground/40"
+                    s.status === "ativo"
+                      ? "bg-emerald-500"
+                      : s.status === "pausado_bot"
+                        ? "bg-red-500"
+                        : "bg-muted-foreground/40"
                   )}
-                  title={s.status === "ativo" ? "ativo" : "pausado"}
+                  title={s.status === "ativo" ? "ativo" : s.status === "pausado_bot" ? "pausado por bot" : "pausado"}
                 />
               </button>
             ))
@@ -307,7 +331,7 @@ export default function Sessoes() {
 
       {/* conversa — no celular ocupa tudo; o placeholder só aparece no desktop */}
       {ativo ? (
-        <ChatView key={ativo} numero={ativo} />
+        <ChatView key={ativo} numero={ativo} sessao={sessaoAtiva} onMudou={recarregarSessoes} />
       ) : (
         <div className="hidden flex-1 flex-col items-center justify-center gap-3 text-muted-foreground md:flex">
           <span className="grid size-14 place-items-center rounded-2xl bg-muted">

@@ -72,7 +72,7 @@ async def geral(_: str = Depends(require_login)):
     c = await get_config()
     m = await _marca()
     return {
-        "presets": presets.listar(),
+        "presets": presets.identidades(),
         "preset_ativo": c.get("preset_ativo", ""),
         **m,
     }
@@ -80,6 +80,9 @@ async def geral(_: str = Depends(require_login)):
 
 class PresetIn(BaseModel):
     preset: str
+    nome_agente: str | None = None
+    nome_marca: str | None = None
+    carregar_produtos: bool = True
 
 
 @router.post("/preset")
@@ -87,11 +90,26 @@ async def aplicar_preset(dados: PresetIn, _: str = Depends(require_login)):
     nome = (dados.preset or "").strip()
     try:
         cfg = presets.carregar(nome)
+        if dados.nome_agente and dados.nome_agente.strip():
+            cfg["nome_agente"] = dados.nome_agente.strip()
+        if dados.nome_marca and dados.nome_marca.strip():
+            cfg["nome_marca"] = dados.nome_marca.strip()
         cfg["preset_ativo"] = nome
         await set_config(cfg)
     except Exception as exc:
         raise HTTPException(status_code=400, detail=f"Não foi possível ativar '{nome}': {exc}")
-    return {"ok": True, "preset_ativo": nome}
+
+    produtos_carregados, aviso = 0, None
+    if dados.carregar_produtos:
+        try:
+            itens = presets.produtos_exemplo(nome)
+            produtos_carregados = await produtos.substituir_catalogo(itens)
+        except Exception:
+            aviso = "Base ativada, mas falhou ao carregar o catálogo de exemplo."
+    return {
+        "ok": True, "preset_ativo": nome,
+        "produtos_carregados": produtos_carregados, "aviso": aviso,
+    }
 
 
 @router.post("/reset")
@@ -284,9 +302,11 @@ async def sessoes(_: str = Depends(require_login)):
     out = []
     for row in linhas:
         numero = row["remoteJid"]
+        detalhe = await R._status_detalhado(numero)
         out.append({
             "numero": numero, "nome": row.get("nomeusuario"),
-            "mascara": R._mascara(numero), "status": await R._status(numero),
+            "mascara": R._mascara(numero),
+            "status": detalhe["status"], "pausa_bot": detalhe["pausa_bot"],
         })
     return {"sessoes": out, "erro": erro}
 
@@ -346,6 +366,7 @@ async def pausar(numero: str, _: str = Depends(require_login)):
 @router.post("/sessoes/{numero}/despausar")
 async def despausar(numero: str, _: str = Depends(require_login)):
     await redis_client.delete(f"{numero}_block")
+    await redis_client.delete(f"{numero}_bot_block")
     return {"ok": True}
 
 
@@ -385,6 +406,21 @@ async def logs_stream(request: Request):
     )
 
 
+# ── Notificações (sininho) ───────────────────────────────────────────────────────
+
+@router.get("/notificacoes")
+async def notificacoes_get(_: str = Depends(require_login)):
+    from app import notificacoes as N
+    return {"notificacoes": await N.listar(50), "nao_lidas": await N.nao_lidas()}
+
+
+@router.post("/notificacoes/lidas")
+async def notificacoes_lidas(_: str = Depends(require_login)):
+    from app import notificacoes as N
+    await N.marcar_lidas()
+    return {"ok": True, "nao_lidas": 0}
+
+
 # ── Execuções ────────────────────────────────────────────────────────────────────
 
 @router.get("/execucoes")
@@ -400,6 +436,10 @@ class ProdutoIn(BaseModel):
     preco: str = ""
     descricao: str = ""
     ativo: bool = True
+
+
+class FotosUrlIn(BaseModel):
+    urls: list[str]
 
 
 @router.get("/produtos")
@@ -450,7 +490,28 @@ async def produtos_upload(pid: int, fotos: list[UploadFile] = File(...), _: str 
         mime = f.content_type or "image/jpeg"
         if not mime.startswith("image/"):
             raise HTTPException(status_code=400, detail=f"'{f.filename}' não é uma imagem")
-        ids.append(await produtos.adicionar_foto(pid, mime, dados))
+        try:
+            ids.append(await produtos.adicionar_foto(pid, mime, dados))
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail=str(exc))
+    return {"ok": True, "fotos": ids}
+
+
+@router.post("/produtos/{pid}/fotos/importar")
+async def produtos_importar_fotos(
+    pid: int, dados: FotosUrlIn, _: str = Depends(require_login)
+):
+    urls = [url.strip() for url in dados.urls if url.strip()]
+    if not urls:
+        raise HTTPException(status_code=400, detail="Informe pelo menos uma URL de imagem")
+    if len(urls) > 10:
+        raise HTTPException(status_code=400, detail="Importe no máximo 10 fotos por vez")
+    try:
+        ids = await produtos.importar_fotos(pid, urls)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    except Exception as exc:
+        raise HTTPException(status_code=502, detail=f"Falha ao importar a imagem: {exc}")
     return {"ok": True, "fotos": ids}
 
 

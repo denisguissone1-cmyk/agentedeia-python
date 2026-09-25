@@ -17,9 +17,9 @@ async def test_get_config_retorna_defaults_quando_vazio(fake_redis):
     assert c["bloqueio_humano_min"] == 15
     assert c["system_prompt"]  # não vazio
     assert "cadastrar" in c["tools_descricao"]
-    # tools_ativas vem por padrão com tudo ligado
+    # por padrão só cadastrar vem ligada; as demais ficam de exemplo (desligadas)
     assert c["tools_ativas"]["cadastrar"] is True
-    assert c["tools_ativas"]["desmarcar"] is True
+    assert c["tools_ativas"]["desmarcar"] is False
 
 
 async def test_set_config_tools_ativas_merge(fake_redis):

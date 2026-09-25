@@ -3,7 +3,7 @@ import logging
 import os
 
 from fastapi import FastAPI, Request
-from fastapi.responses import FileResponse, JSONResponse, Response
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
@@ -50,6 +50,9 @@ async def health():
 async def media_foto(fid: int):
     """Serve a foto de um produto (pública — o painel exibe e a UAZAPI baixa para enviar)."""
     from app import produtos
+    url = await produtos.foto_url(fid)
+    if url:
+        return RedirectResponse(url, status_code=307, headers={"Cache-Control": "private, no-store"})
     item = await produtos.foto(fid)
     if not item:
         return Response(status_code=404)

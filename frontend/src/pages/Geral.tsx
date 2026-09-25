@@ -8,7 +8,17 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
+import { Input } from "@/components/ui/input"
+import { Checkbox } from "@/components/ui/checkbox"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,12 +31,18 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 
-type GeralData = { presets: string[]; preset_ativo: string }
+type PresetInfo = { id: string; nome_agente: string; nome_marca: string }
+type GeralData = { presets: PresetInfo[]; preset_ativo: string; nome_agente: string; nome_marca: string }
+type AtivarResp = { ok: boolean; preset_ativo: string; produtos_carregados: number; aviso: string | null }
+
+const formVazio = { nome_agente: "", nome_marca: "", carregar_produtos: true }
 
 export default function Geral() {
   const [data, setData] = useState<GeralData | null>(null)
   const [sel, setSel] = useState("")
   const [busy, setBusy] = useState(false)
+  const [modalOpen, setModalOpen] = useState(false)
+  const [form, setForm] = useState(formVazio)
 
   const carregar = () =>
     api<GeralData>("/geral").then((d) => {
@@ -38,12 +54,38 @@ export default function Geral() {
     carregar().catch(() => toast.error("Falha ao carregar o painel"))
   }, [])
 
+  const abrirModal = () => {
+    const info = data?.presets.find((p) => p.id === sel)
+    setForm({
+      nome_agente: info?.nome_agente || "",
+      nome_marca: info?.nome_marca || "",
+      carregar_produtos: true,
+    })
+    setModalOpen(true)
+  }
+
   const ativar = async () => {
+    if (!form.nome_agente.trim() || !form.nome_marca.trim()) {
+      toast.error("Preencha o nome do agente e o nome da marca")
+      return
+    }
     setBusy(true)
     try {
-      await post("/preset", { preset: sel })
+      const r = await post<AtivarResp>("/preset", {
+        preset: sel,
+        nome_agente: form.nome_agente.trim(),
+        nome_marca: form.nome_marca.trim(),
+        carregar_produtos: form.carregar_produtos,
+      })
+      setModalOpen(false)
       await carregar()
-      toast.success(`Base "${sel}" ativada`, { description: "Revise o prompt, as tools e a marca." })
+      window.dispatchEvent(new Event("marca-atualizada"))
+      toast.success(`Base "${presetLabel(sel)}" ativada`, {
+        description: r.produtos_carregados
+          ? `${r.produtos_carregados} produto(s) de exemplo carregados. Revise o prompt e as tools.`
+          : "Revise o prompt, as tools e a marca.",
+      })
+      if (r.aviso) toast.warning(r.aviso)
     } catch {
       toast.error("Não foi possível ativar a base")
     } finally {
@@ -92,13 +134,13 @@ export default function Geral() {
         <CardContent className="p-2">
           <RadioGroup value={sel} onValueChange={setSel} className="gap-1">
             {data.presets.map((p) => {
-              const Icon = nicheIcon(p)
-              const ativo = p === data.preset_ativo
-              const checked = p === sel
+              const Icon = nicheIcon(p.id)
+              const ativo = p.id === data.preset_ativo
+              const checked = p.id === sel
               return (
                 <Label
-                  key={p}
-                  htmlFor={`p-${p}`}
+                  key={p.id}
+                  htmlFor={`p-${p.id}`}
                   className={cn(
                     "flex cursor-pointer items-center gap-3 rounded-lg border border-transparent px-3.5 py-3 transition-colors hover:bg-muted",
                     checked && "border-primary/20 bg-primary/5"
@@ -112,9 +154,14 @@ export default function Geral() {
                   >
                     <Icon className="size-[18px]" />
                   </span>
-                  <span className="flex-1 text-sm font-semibold">{presetLabel(p)}</span>
+                  <span className="flex-1">
+                    <span className="block text-sm font-semibold">{presetLabel(p.id)}</span>
+                    <span className="block text-xs text-muted-foreground">
+                      {p.nome_agente} · {p.nome_marca}
+                    </span>
+                  </span>
                   {ativo && <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">ativa</Badge>}
-                  <RadioGroupItem value={p} id={`p-${p}`} />
+                  <RadioGroupItem value={p.id} id={`p-${p.id}`} />
                 </Label>
               )
             })}
@@ -126,25 +173,66 @@ export default function Geral() {
           )}
         </CardContent>
         <div className="flex justify-end border-t p-4">
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button disabled={!podeAtivar || busy}>Ativar base</Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Ativar a base "{sel}"?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Isso vai sobrescrever o prompt, as tools e a marca atuais do agente.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                <AlertDialogAction onClick={ativar}>Ativar base</AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+          <Button disabled={!podeAtivar || busy} onClick={abrirModal}>
+            Ativar base
+          </Button>
         </div>
       </Card>
+
+      {/* Modal de ativação: nome do agente/marca + catálogo de exemplo */}
+      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Ativar a base "{presetLabel(sel)}"?</DialogTitle>
+            <DialogDescription>
+              Isso vai sobrescrever o prompt, as tools e a marca atuais do agente. Com o catálogo
+              marcado, os produtos atuais serão apagados e substituídos pelos de exemplo.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid gap-2">
+              <Label htmlFor="nome_agente">Nome do agente</Label>
+              <Input
+                id="nome_agente"
+                autoFocus
+                placeholder="Ex.: Clara"
+                value={form.nome_agente}
+                onChange={(e) => setForm((f) => ({ ...f, nome_agente: e.target.value }))}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="nome_marca">Nome da marca / empresa</Label>
+              <Input
+                id="nome_marca"
+                placeholder="Ex.: Farmácia Vida"
+                value={form.nome_marca}
+                onChange={(e) => setForm((f) => ({ ...f, nome_marca: e.target.value }))}
+              />
+            </div>
+            <label className="flex cursor-pointer items-start gap-2.5 rounded-lg border px-3 py-2.5">
+              <Checkbox
+                checked={form.carregar_produtos}
+                onCheckedChange={(v) => setForm((f) => ({ ...f, carregar_produtos: v === true }))}
+                className="mt-0.5"
+              />
+              <span>
+                <span className="block text-sm font-medium">Carregar catálogo de exemplo</span>
+                <span className="block text-xs text-muted-foreground">
+                  Substitui os produtos atuais pelos ~10 itens de exemplo deste nicho
+                </span>
+              </span>
+            </label>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setModalOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={ativar} disabled={busy}>
+              Ativar base
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Reset */}
       <Card className="border-destructive/30">

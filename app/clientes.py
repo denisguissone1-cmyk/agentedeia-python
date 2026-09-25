@@ -95,8 +95,13 @@ def garantir_schema() -> None:
             'CREATE TABLE IF NOT EXISTS produto_foto ('
             'id SERIAL PRIMARY KEY, '
             'produto_id INTEGER NOT NULL REFERENCES produto(id) ON DELETE CASCADE, '
-            'mime TEXT NOT NULL DEFAULT \'image/jpeg\', dados BYTEA NOT NULL, '
+            'mime TEXT NOT NULL DEFAULT \'image/jpeg\', dados BYTEA, '
+            'gcs_objeto TEXT, url TEXT, gcs_gerenciado BOOLEAN NOT NULL DEFAULT TRUE, '
             'ordem INTEGER NOT NULL DEFAULT 0)',
+            'ALTER TABLE produto_foto ALTER COLUMN dados DROP NOT NULL',
+            'ALTER TABLE produto_foto ADD COLUMN IF NOT EXISTS gcs_objeto TEXT',
+            'ALTER TABLE produto_foto ADD COLUMN IF NOT EXISTS url TEXT',
+            'ALTER TABLE produto_foto ADD COLUMN IF NOT EXISTS gcs_gerenciado BOOLEAN NOT NULL DEFAULT TRUE',
             'CREATE TABLE IF NOT EXISTS audio_msg ('
             'id SERIAL PRIMARY KEY, "remoteJid" TEXT, '
             'mime TEXT NOT NULL DEFAULT \'audio/ogg\', dados BYTEA NOT NULL, '

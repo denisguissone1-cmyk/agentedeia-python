@@ -20,5 +20,10 @@ pat.txt
 client_secret*.json
 *credentials*.json
 *service-account*.json
+android-417615-d99ad39abac9.json
+* _ OLX/
 scripts_seed_dev.py
-test_*.py
+/test_*.py
+
+# config pessoal do Claude Code (por máquina — não é do time)
+.claude/settings.local.json

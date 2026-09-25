@@ -62,6 +62,7 @@ export default function Config() {
   const salvarConfig = async () => {
     try {
       await post("/config", c)
+      window.dispatchEvent(new Event("marca-atualizada"))
       toast.success("Configurações salvas")
     } catch (e) {
       toast.error(e instanceof ApiError ? e.message : "Falha ao salvar")

@@ -167,9 +167,15 @@ async def _registrar_webhook_uazapi(url: str, tokens: dict) -> tuple[bool, str]:
     return False, f"A UAZAPI respondeu {resp.status_code}: {resp.text[:160]}"
 
 
-async def _status(numero: str) -> str:
+async def _status_detalhado(numero: str) -> dict:
+    """{"status": "ativo"|"pausado/bloqueado"|"pausado_bot", "pausa_bot": dict|None}.
+    Pausa por bot tem prioridade — é o estado mais específico (motivo registrado)."""
+    from app.bloqueios import info_pausa_bot
+    bot = await info_pausa_bot(numero)
+    if bot is not None:
+        return {"status": "pausado_bot", "pausa_bot": bot}
     val = await redis_client.get(f"{numero}_block")
-    return "pausado/bloqueado" if val == b"true" else "ativo"
+    return {"status": "pausado/bloqueado" if val == b"true" else "ativo", "pausa_bot": None}
 
 
 def _mascara(numero: str) -> str:

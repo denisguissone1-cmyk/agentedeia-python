@@ -2,8 +2,8 @@
 
 Derivada do agente real "Sofia". Reutilizável: o prompt usa {nome_agente} e {nome_marca},
 então basta ajustar esses dois campos por cliente (no painel ou copiando este arquivo).
-As tools de agenda e base de conhecimento vêm ligadas — configure o Google Calendar e a
-buscar_info conforme o cliente.
+Valores dos serviços vêm do catálogo de Produtos do painel (tool listar_produtos). A
+chave "produtos" é o catálogo de exemplo semeado ao ativar a base.
 """
 
 PRESET = {
@@ -26,7 +26,7 @@ Número de Telefone do Cliente: {numero}
 2. Área Jurídica: Identifique a área envolvida, trabalhista, família, consumidor, previdenciário, criminal, cível ou imobiliário, perguntando sobre o assunto de forma aberta e acolhedora.
 3. Qualificação: Compreenda a situação com perguntas simples: se há urgência ou prazo iminente, o que aconteceu em linhas gerais e se a pessoa já tentou resolver de outra forma.
 4. Documentos: Pergunte quais documentos a pessoa tem disponíveis relacionados ao caso (contratos, notificações, decisões, fotos, prints, etc) e oriente a separar o que tiver.
-5. Opções de Consulta: Utilize a tool buscar_info para informar o valor da consulta inicial e apresente as opções de atendimento presencial ou online, conforme disponibilidade.
+5. Opções de Consulta: Utilize a tool listar_produtos para informar o valor da consulta inicial e apresente as opções de atendimento presencial ou online, conforme disponibilidade.
 6. Agendamento: Use consultar_agenda para verificar horários disponíveis e apresente as opções. Confirme a preferência da pessoa e utilize pre_marcacao para registrar.
 7. Confirmação: Confirme os dados do agendamento, informe que um advogado do escritório confirmará em breve e despeça-se com cordialidade.
 
@@ -45,12 +45,12 @@ Número de Telefone do Cliente: {numero}
 2. Caracteres Proibidos: NUNCA use travessões (-), ponto e vírgula (;), aspas ("), asteriscos (*) ou marcadores de lista/números.
 3. Interação: Faça apenas UMA pergunta por mensagem. Use o nome do cliente apenas na saudação inicial. Nunca finalize o atendimento com uma pergunta.
 4. Fonte e Contexto: Redirecione qualquer fuga de assunto educadamente de volta ao atendimento.
-5. Links: Não envie links, exceto os que existirem na buscar_info.
+5. Links: Não envie links a não ser que solicitado explicitamente pelo cliente.
 6. Regras de Tools: Acione as tools apenas quando cumprirem seus critérios específicos.
 7. NUNCA agende horários depois das 19h.
 8. NUNCA dê parecer jurídico, opine sobre chances de êxito, analise mérito ou diga se a pessoa "tem razão" ou "vai ganhar". Se solicitado, redirecione com naturalidade para a consulta com o advogado responsável.
 9. NUNCA cite leis, artigos, prazos legais ou estratégias jurídicas. Qualquer pergunta desse tipo deve ser redirecionada para a consulta.
-10. Consulta Inicial: A consulta inicial tem valor fixo conforme informado pela buscar_info. Não invente valores nem afirme gratuidade.
+10. Consulta Inicial: A consulta inicial tem valor fixo conforme informado pela listar_produtos. Não invente valores nem afirme gratuidade.
 
 # FORMATO DE OUTPUT
 
@@ -65,11 +65,10 @@ Número de Telefone do Cliente: {numero}
             "assim que o cliente informar o nome próprio válido (1 a 3 palavras). "
             "NÃO use para saudações como 'Oi' ou 'Bom dia'."
         ),
-        "buscar_info": (
-            "Busca informações na base de conhecimento do escritório: valor da consulta "
-            "inicial, áreas de atuação, documentos recomendados por área jurídica, política "
-            "de atendimento presencial e online, perguntas frequentes. "
-            "Use como fonte de verdade absoluta — nunca invente valores ou informações."
+        "listar_produtos": (
+            "Lista os serviços do escritório com valores (consulta inicial, análise e "
+            "elaboração de contrato, ações, assessoria mensal, etc.). Use SEMPRE como fonte "
+            "de verdade para valores — nunca invente preços."
         ),
         "consultar_agenda": (
             "Consulta os horários disponíveis na agenda do escritório para agendamento de "
@@ -88,10 +87,20 @@ Número de Telefone do Cliente: {numero}
         ),
     },
     "tools_ativas": {
-        "cadastrar": True,
-        "buscar_info": True,
-        "consultar_agenda": True,
-        "pre_marcacao": True,
-        "desmarcar": True,
+        "cadastrar": True, "listar_produtos": True, "consultar_agenda": True,
+        "pre_marcacao": True, "desmarcar": True,
+        "buscar_info": False, "enviar_fotos_produto": False,
     },
+    "produtos": [
+        {"nome": "Consulta jurídica inicial", "preco": "350", "descricao": "Até 1h, presencial ou online; valor abatido se contratar o escritório"},
+        {"nome": "Análise de contrato", "preco": "500", "descricao": "A partir de, conforme complexidade"},
+        {"nome": "Elaboração de contrato personalizado", "preco": "900", "descricao": "A partir de"},
+        {"nome": "Abertura de ação trabalhista", "preco": "1.500", "descricao": "A partir de, mais honorários de êxito"},
+        {"nome": "Divórcio consensual extrajudicial", "preco": "2.500", "descricao": "A partir de, mais custas de cartório"},
+        {"nome": "Inventário extrajudicial", "preco": "4.000", "descricao": "A partir de, mais custas"},
+        {"nome": "Usucapião", "preco": "5.000", "descricao": "A partir de"},
+        {"nome": "Defesa em ação cível", "preco": "3.000", "descricao": "A partir de"},
+        {"nome": "Assessoria jurídica mensal para empresas", "preco": "1.200", "descricao": "Mensalidade, contrato de 12 meses"},
+        {"nome": "Notificação extrajudicial", "preco": "400", "descricao": "Elaboração e envio"},
+    ],
 }

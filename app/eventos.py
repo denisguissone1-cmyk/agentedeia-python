@@ -12,7 +12,7 @@ from datetime import datetime
 
 import pytz
 
-from app.config import redis_client
+from app.config import get_config, redis_client
 
 _TZ = pytz.timezone("America/Sao_Paulo")
 LISTA = "eventos:recentes"
@@ -77,8 +77,14 @@ async def recebida(nome: str, numero: str, tipo: str) -> None:
     await _hist("mensagens")
 
 
+async def _nome_agente() -> str:
+    cfg = await get_config()
+    return cfg.get("nome_agente") or "Agente"
+
+
 async def respondida(nome: str, numero: str) -> None:
-    await emit(f"Sofia respondeu {_quem(nome, numero)}", cor="e-grn", filtro="msg", icone="✅")
+    ag = await _nome_agente()
+    await emit(f"{ag} respondeu {_quem(nome, numero)}", cor="e-grn", filtro="msg", icone="✅")
 
 
 async def aviso_rate(nome: str, numero: str) -> None:
@@ -89,8 +95,9 @@ async def aviso_rate(nome: str, numero: str) -> None:
 
 
 async def humano_assumiu(nome: str, numero: str) -> None:
+    ag = await _nome_agente()
     await emit(
-        f"Um atendente humano assumiu a conversa de {_quem(nome, numero)} — Sofia pausada",
+        f"Um atendente humano assumiu a conversa de {_quem(nome, numero)} — {ag} pausada",
         cor="e-amb", filtro="aviso", icone="🙋",
     )
 

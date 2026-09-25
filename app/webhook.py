@@ -2,15 +2,18 @@ import asyncio
 import hmac
 import json
 import logging
+import re
 import uuid
 
 from fastapi import HTTPException
 from tenacity import retry, retry_if_exception, stop_after_attempt, wait_exponential
 
-from app import clientes, eventos
+from app import clientes, eventos, notificacoes
 from app.agente import chamar_agente
 from app.execucoes import Execucao
-from app.bloqueios import ja_processada, verifica_rate_limit, verificar_bloqueios_rapido
+from app.bloqueios import (
+    ja_processada, pausar_por_bot, verifica_rate_limit, verificar_bloqueios_rapido,
+)
 from app.buffer import buffer_mensagens
 from app.clientes import get_db_conn
 from app.config import get_tokens
@@ -126,11 +129,29 @@ async def enviar_texto(
     await _enviar_texto_raw(number, texto, delay_ms, marcar_lido)
 
 
+def separar_mensagens(texto: str) -> list[str]:
+    """Converte a resposta do agente em bolhas curtas do WhatsApp.
+
+    O modelo pode variar entre ``\\n`` e ``\\n\\n``. Linhas/parágrafos viram bolhas
+    independentes e uma resposta com mais de uma pergunta é separada após cada ``?``.
+    Isso mantém o comportamento dos agentes antigos mesmo quando o modelo não respeita
+    exatamente a formatação do prompt.
+    """
+    texto = re.sub(r"\r\n?", "\n", texto or "").strip()
+    if not texto:
+        return []
+    blocos = [b.strip() for b in re.split(r"\n\s*\n|\n", texto) if b.strip()]
+    mensagens = []
+    for bloco in blocos:
+        mensagens.extend(p.strip() for p in re.split(r"(?<=\?)\s+", bloco) if p.strip())
+    return mensagens
+
+
 async def enviar_resposta(number: str, texto: str) -> None:
-    paragrafos = [p.strip() for p in texto.split("\n\n") if p.strip()]
-    for i, paragrafo in enumerate(paragrafos):
-        await enviar_typing(number, calcular_typing_ms(paragrafo))
-        await enviar_texto(number, paragrafo, marcar_lido=(i == 0))
+    mensagens = separar_mensagens(texto)
+    for i, mensagem in enumerate(mensagens):
+        await enviar_typing(number, calcular_typing_ms(mensagem))
+        await enviar_texto(number, mensagem, marcar_lido=(i == 0))
 
 
 async def enviar_fallback(number: str) -> None:
@@ -196,6 +217,11 @@ async def processar_em_background(body: dict) -> None:
             await inserir_na_memoria(number, dados["txtmessage"], role="ai")
             logger.info(f"[{req_id}] [{number}] Atendente humano assumiu — bot silenciado")
             await eventos.humano_assumiu(dados["nome"], number)
+            await notificacoes.notificar(
+                titulo="Atendente humano assumiu",
+                texto=f"Conversa com {dados['nome'] or number.split('@')[0]} pausada",
+                tipo="humano_assumiu", numero=number, dedupe_ttl=15 * 60,
+            )
             return
 
         if status == "bloquear_wpp":
@@ -213,6 +239,13 @@ async def processar_em_background(body: dict) -> None:
             exe.encerrar("ignorada")
             await inserir_na_memoria(number, texto_mensagem, role="human")
             logger.info(f"[{req_id}] [{number}] Mensagem salva em silêncio (bloqueio individual)")
+            return
+
+        if status == "bloquear_bot":
+            exe.passo("Salvo em silêncio", "pausa automática ativa: outro bot detectado")
+            exe.encerrar("ignorada")
+            await inserir_na_memoria(number, texto_mensagem, role="human")
+            logger.info(f"[{req_id}] [{number}] Mensagem salva em silêncio (pausa por bot)")
             return
 
         cadastro = await verificar_ou_criar_cadastro(number)
@@ -250,7 +283,7 @@ async def processar_em_background(body: dict) -> None:
         exe.passo("Enviando ao agente", f"{len(texto_completo)} chars")
         logger.info(f"[{req_id}] [{number}] Enviando ao agente ({len(texto_completo)} chars)")
         try:
-            texto_resposta = await chamar_agente(number, texto_completo, cadastro, itens)
+            resultado = await chamar_agente(number, texto_completo, cadastro, itens)
         except asyncio.TimeoutError:
             exe.erro("Agente", "timeout — excedeu o tempo limite")
             logger.error(f"[{req_id}] [{number}] Timeout no agente")
@@ -262,6 +295,19 @@ async def processar_em_background(body: dict) -> None:
             await enviar_fallback(number)
             return
 
+        if resultado.pausa_bot:
+            await pausar_por_bot(number, resultado.pausa_bot)
+            exe.passo("Outro bot detectado — conversa pausada", resultado.pausa_bot)
+            exe.encerrar("ignorada")
+            logger.info(f"[{req_id}] [{number}] Outro bot detectado — pausada: {resultado.pausa_bot}")
+            await notificacoes.notificar(
+                titulo="Possível bot detectado",
+                texto=f"Pausei a conversa com {dados['nome'] or number.split('@')[0]}: {resultado.pausa_bot}",
+                tipo="bot_detectado", numero=number,
+            )
+            return
+
+        texto_resposta = resultado.texto
         exe.passo("Resposta do agente", f"{len(texto_resposta)} chars")
         await enviar_resposta(number, texto_resposta)
         exe.passo("Resposta enviada ao WhatsApp")

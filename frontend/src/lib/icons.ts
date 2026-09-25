@@ -7,6 +7,7 @@ import {
   Smile,
   Activity,
   Smartphone,
+  Pill,
   Boxes,
   UserPlus,
   Search,
@@ -20,6 +21,9 @@ import {
   CalendarDays,
   Clock,
   AlertTriangle,
+  Bot,
+  Hand,
+  Bell,
   type LucideIcon,
 } from "lucide-react"
 
@@ -32,6 +36,7 @@ const niche: Record<string, LucideIcon> = {
   odontologia: Smile,
   fisioterapia: Activity,
   loja_iphone: Smartphone,
+  farmacia: Pill,
 }
 
 export const nicheIcon = (name: string): LucideIcon => niche[name] ?? Boxes
@@ -46,6 +51,7 @@ const labels: Record<string, string> = {
   odontologia: "Odontologia",
   fisioterapia: "Fisioterapia",
   loja_iphone: "Loja de iPhone",
+  farmacia: "Farmácia",
 }
 
 export const presetLabel = (key: string): string =>
@@ -81,3 +87,17 @@ export const eventoCor: Record<string, string> = {
   "e-amb": "bg-amber-100 text-amber-600",
   "e-red": "bg-red-100 text-red-600",
 }
+
+const notifIcones: Record<string, LucideIcon> = {
+  bot_detectado: Bot,
+  humano_assumiu: Hand,
+}
+
+export const notifIcone = (tipo: string): LucideIcon => notifIcones[tipo] ?? Bell
+
+const notifCores: Record<string, string> = {
+  bot_detectado: "bg-red-100 text-red-600",
+  humano_assumiu: "bg-amber-100 text-amber-600",
+}
+
+export const notifCor = (tipo: string): string => notifCores[tipo] ?? "bg-blue-100 text-blue-600"
